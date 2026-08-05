@@ -5,3 +5,4 @@ node_modules
 .rumdl_cache/
 ISSUES.md
 issues.md
+package-lock.json

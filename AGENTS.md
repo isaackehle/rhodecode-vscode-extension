@@ -67,8 +67,8 @@ bun run package      # vsce package -> .vsix
 - The client is rebuilt after repo selection so `repoId` matches the picked repo.
 - Commands: prefix `rhodecode.`; register in BOTH `package.json` contributions and `src/commands.ts`.
 - No `Co-Authored-By` trailers. Conventional Commits, subject ≤ 72 chars: `feat(comments): ...`, `fix(api): ...`, `chore(toolchain): ...`.
-- Commit the lockfile whenever dependencies change (`bun install` updates `bun.lock`, `npm install` updates
-  `package-lock.json`) — a stale lockfile silently pins old versions for everyone who installs later.
+- Commit the lockfile whenever dependencies change (`bun install` updates `bun.lock`) — a stale lockfile silently pins
+  old versions for everyone who installs later.
 
 ## Versioning & Releases
 
