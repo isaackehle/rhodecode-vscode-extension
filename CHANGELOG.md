@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.0 - 2026-08-05
+
+- Onboarding: "Set up connection…" welcome panel in the view when unconfigured; persistent status bar item showing connection state (click to connect / switch repo).
+- Agents support: added AGENTS.md with repo conventions, RhodeCode API facts, and toolchain notes.
+
 ## 0.5.0 - 2026-08-05
 
 - Toolchain: migrated from eslint to oxlint + oxfmt (configs `.oxlintrc.json`, `.oxfmtrc.json`).

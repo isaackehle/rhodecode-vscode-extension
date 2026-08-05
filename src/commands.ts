@@ -12,6 +12,7 @@ export function registerCommands(
     tree: PullRequestTreeProvider,
     commentView: CommentViewProvider,
     setClient: (client: RhodeCodeClient | undefined) => void,
+    refreshAll: () => Promise<void>,
 ): void {
     context.subscriptions.push(
         vscode.commands.registerCommand('rhodecode.connect', async () => {
@@ -29,7 +30,7 @@ export function registerCommands(
                 vscode.window.showInformationMessage(
                     `Connected to ${result.serverUrl} — repository "${result.repo.repo_name}" selected.`,
                 );
-                await tree.load();
+                await refreshAll();
             } catch (err) {
                 reportError('connect', err);
             }
@@ -49,8 +50,7 @@ export function registerCommands(
                 await setRepoId(repo.repo_name);
                 // Rebuild the client so it points at the newly chosen repo.
                 setClient(new RhodeCodeClient(client.getServerUrl(), client.getApiKey(), repo.repo_name));
-                tree.refresh();
-                await tree.load();
+                await refreshAll();
             } catch (err) {
                 reportError('select repository', err);
             }

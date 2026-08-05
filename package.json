@@ -2,7 +2,7 @@
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",
@@ -152,14 +152,16 @@
                     "command": "rhodecode.openChangeset",
                     "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/",
                     "group": "inline"
-                },
-                {
-                    "command": "rhodecode.connect",
-                    "when": "view == rhodecode.pullRequests && viewItem == setup",
-                    "group": "inline"
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "rhodecode.pullRequests",
+                "contents": "Connect to your RhodeCode server to browse repositories, branches and pull requests.\n\n[Set up connection…](command:rhodecode.connect)\n[Open Settings](command:workbench.action.openSettings?%5B%22rhodecode.serverurl%22%5D)",
+                "when": "view == rhodecode.pullRequests && !config.rhodecode.serverurl"
+            }
+        ],
         "configuration": [
             {
                 "title": "RhodeCode Configuration",

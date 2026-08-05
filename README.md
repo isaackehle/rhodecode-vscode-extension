@@ -23,6 +23,21 @@ This extension began as a fork of [dimsedane/vscode-rhodecode](https://github.co
 
 A RhodeCode server with API access and an API key for your user.
 
+## First run on a new machine
+
+Everything happens from the **RhodeCode activity-bar icon** (the comment-bubble icon in the left bar):
+
+1. Open the **RhodeCode** view (click the icon). If you haven't connected yet, the view shows a **"Set up connection…"** panel — click it.
+2. Enter your server address (e.g. `rhodecode.example.com` or `https://rhodecode.example.com:8443`).
+3. Enter your API key (from your user profile on the RhodeCode server).
+4. Pick a repository from the browser — done.
+
+You can also start the wizard at any time from:
+- the command palette: **RhodeCode: Connect to RhodeCode…** (Ctrl/Cmd+Shift+P → type "RhodeCode")
+- the **status bar**: the extension shows a persistent `RhodeCode: not connected` item at the bottom left — click it
+
+After connecting, the status bar shows the selected repository and clicking it re-opens the repo browser. Settings are persisted automatically (`rhodecode.serverurl` / `rhodecode.apikey` globally, `rhodecode.repoid` in the workspace).
+
 ## Configuration
 
 Server URL, API key and repository can all be set through **Connect to RhodeCode…** / **Select Repository…** (recommended). They are also available as settings:
@@ -58,6 +73,11 @@ npm run package      # vsce package -> .vsix
 ```
 
 ## Release notes
+
+### 0.6.0
+
+- **Onboarding**: the view now shows a "Set up connection…" welcome panel when no server is configured, and a persistent status bar item (`RhodeCode: not connected` → click to connect) makes it obvious where to configure the server.
+- **Agents support**: added `AGENTS.md` so AI coding agents (Hermes, Claude Code, Codex, OpenCode, etc.) work with the repo's conventions, API facts, and toolchain.
 
 ### 0.5.0
 

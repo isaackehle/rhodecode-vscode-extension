@@ -55,20 +55,6 @@ export class RefItem extends vscode.TreeItem {
     }
 }
 
-/** Placeholder shown when no server/repository is configured yet. */
-export class SetupItem extends vscode.TreeItem {
-    constructor() {
-        super('Set up connection…', vscode.TreeItemCollapsibleState.None);
-        this.id = 'setup';
-        this.contextValue = 'setup';
-        this.iconPath = new vscode.ThemeIcon('plug');
-        this.command = {
-            command: 'rhodecode.connect',
-            title: 'Connect to RhodeCode',
-        };
-    }
-}
-
 function reviewStatusIcon(status: string): string {
     switch (status) {
         case 'approved':
@@ -123,8 +109,10 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
         if (!element) {
+            // Unconfigured: return nothing so the viewsWelcome onboarding
+            // ("Set up your RhodeCode connection") is shown instead.
             if (!this.getClient()) {
-                return [new SetupItem()];
+                return [];
             }
             return [
                 new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
