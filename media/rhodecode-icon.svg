@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <rect width="24" height="24" rx="4" fill="#2b5f9e"/>
-  <path d="M6 17.5V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9.5L6 17.5z" fill="#fff"/>
-  <circle cx="9" cy="11.5" r="1" fill="#2b5f9e"/>
-  <circle cx="12" cy="11.5" r="1" fill="#2b5f9e"/>
-  <circle cx="15" cy="11.5" r="1" fill="#2b5f9e"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Monochrome comment-bubble for the activity bar. VS Code applies the
+       SVG as a mask and recolors it with the theme, so the background must
+       be transparent and the shape must be a single fill (holes via evenodd). -->
+  <path
+    fill-rule="evenodd"
+    d="M6 17.5V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9.5L6 17.5zm3-6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+    fill="#ffffff"
+  />
 </svg>

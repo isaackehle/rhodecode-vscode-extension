@@ -24,6 +24,8 @@ src/commentParser.ts         HTML fallback parser for RhodeCode < 4.6
 src/handledStore.ts          Local "handled" state (workspaceState)
 src/commands.ts              Command registrations + merge gate
 src/extension.ts             Activation entry point
+media/rhodecode-icon.png     128x128 extension icon (top-level `icon` field in package.json)
+media/rhodecode-icon.svg     activity-bar icon (must be transparent-bg monochrome; VS Code masks it)
 ```
 
 ## Toolchain
@@ -91,4 +93,7 @@ npm run lint && npm run lint:md && npm run format:check && npm run compile && np
 - `activationEvents` in `package.json` must list EVERY contributed command (`onCommand:rhodecode.*`) plus
   `onView:rhodecode.pullRequests`. An empty `[]` means the extension never activates on fresh installs and every command
   fails with "command not found".
+- `package.json` needs a top-level `icon` field pointing at a 128x128 PNG (`media/rhodecode-icon.png`); the activity-bar
+  SVG (`media/rhodecode-icon.svg`) must have a transparent background and a single fill — VS Code masks it monochrome, so
+  a full-bleed `<rect>` renders as a solid square.
 - After packaging, optionally `code --install-extension <file>.vsix --force` and confirm it lists.

@@ -96,6 +96,12 @@ npm run package      # vsce package -> .vsix
 
 ## Release notes
 
+### 0.6.2
+
+- **Fix**: extension icon. Added the top-level `icon` field (128x128 PNG) so the Extensions view shows the RhodeCode
+  bubble instead of the default placeholder square. The activity-bar icon was a full-bleed SVG rect (rendered as a
+  solid square when VS Code masks it monochrome) — replaced with a transparent-background bubble-only SVG.
+
 ### 0.6.1
 
 - **Fix**: the extension now activates on fresh installs — `activationEvents` was empty, so no command or view ever
