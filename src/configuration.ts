@@ -2,70 +2,62 @@ import * as vscode from 'vscode';
 
 const CONFIGURATION_SECTION = 'rhodecode';
 
-export async function getApiKey() {
-    var configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
+export async function getApiKey(): Promise<string | undefined> {
+    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
 
-    // Ensure API key is available
-    var apiKey = configuration.get<string>("apikey");
-    if(apiKey === "") {
+    let apiKey = configuration.get<string>('apikey');
+    if (!apiKey) {
         apiKey = await vscode.window.showInputBox({
-            placeHolder: "Auth Token",
-            prompt: "Please enter your RhodeCode authtoken"
+            placeHolder: 'API Key',
+            prompt: 'Please enter your RhodeCode API key'
         });
-
-        if(apiKey !== undefined) {
-            await configuration.update("apikey", apiKey, vscode.ConfigurationTarget.Global);
+        if (apiKey) {
+            await configuration.update('apikey', apiKey, vscode.ConfigurationTarget.Global);
         }
     }
-
     return apiKey;
 }
 
-const SERVERURL_KEY = "serverurl"; 
-export async function getApiUrl() {
-    var configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
+export async function getApiUrl(): Promise<string | undefined> {
+    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
 
-    var serverUrl = configuration.get<string>(SERVERURL_KEY);
-    if(serverUrl === "") {
+    let serverUrl = configuration.get<string>('serverurl');
+    if (!serverUrl) {
         serverUrl = await vscode.window.showInputBox({
-            placeHolder: "Server Url",
-            prompt: "Please enter your RhodeCode server URL"
+            placeHolder: 'Server URL',
+            prompt: 'Please enter your RhodeCode server URL'
         });
-
-        if(serverUrl !== undefined) {
-            await configuration.update(SERVERURL_KEY, serverUrl, vscode.ConfigurationTarget.Global);
+        if (serverUrl) {
+            await configuration.update('serverurl', serverUrl, vscode.ConfigurationTarget.Global);
         }
     }
 
-    // Ensure url is with protocol and ends without slash
-    if(serverUrl !== undefined) {
-        if(!serverUrl.startsWith("http")) {
-            serverUrl = "https://" + serverUrl;
+    if (serverUrl) {
+        if (!/^https?:\/\//i.test(serverUrl)) {
+            serverUrl = 'https://' + serverUrl;
         }
-
-        if(serverUrl.endsWith("/")) {
-            serverUrl = serverUrl.substr(0, serverUrl.length - 1);
-        }
+        serverUrl = serverUrl.replace(/\/+$/, '');
     }
-
     return serverUrl;
 }
 
-const REPOID_KEY = "repoid";
-export async function getRepoId() {
-    var configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
+export async function getRepoId(): Promise<string | undefined> {
+    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
 
-    var repoId = configuration.get<string>(REPOID_KEY);
-    if(repoId === "") {
+    let repoId = configuration.get<string>('repoid');
+    if (!repoId) {
         repoId = await vscode.window.showInputBox({
-            placeHolder: "Repository Identifier",
-            prompt: "Please enter the repository identifier. This will be saved in your workspace configuration"
+            placeHolder: 'Repository Identifier',
+            prompt: 'Please enter the repository identifier. This will be saved in your workspace configuration'
         });
-
-        if(repoId) {
-            await configuration.update(REPOID_KEY, repoId, vscode.ConfigurationTarget.Workspace);
+        if (repoId) {
+            await configuration.update('repoid', repoId, vscode.ConfigurationTarget.Workspace);
         }
     }
-
     return repoId;
+}
+
+export function getMarkHandledPostsComment(): boolean {
+    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
+    return configuration.get<boolean>('markHandledPostsComment', false);
 }

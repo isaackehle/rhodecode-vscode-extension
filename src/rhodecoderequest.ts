@@ -1,147 +1,143 @@
+import axios from 'axios';
 import { window } from 'vscode';
 import * as config from './configuration';
-import axios from 'axios';
+import {
+    CommentResult,
+    RepoRefs,
+    RhodeCodePullRequest,
+    RhodeCodeResponse
+} from './model/rhodecode';
 
+/**
+ * Minimal JSON-RPC client for the RhodeCode API.
+ * Endpoint: POST {serverUrl}/_admin/api with { id, api_key, method, args }.
+ */
+export class RhodeCodeClient {
+    private readonly serverUrl: string;
+    private readonly apiKey: string;
+    private readonly repoId: string;
 
-async function postRequest<T>(method: string, args: {}) {
-    var serverUrl = await config.getApiUrl();
-    var apiKey = await config.getApiKey();
-
-    var response = await axios.post<RhodeCodeResponse<T>>(`${serverUrl}/_admin/api`, {
-        "id":"1",
-        "api_key": apiKey,
-        "method": method,
-        "args": args
-    });
-
-    if(response.status !== 200) {
-        window.showErrorMessage('Something went wrong while communicating with RhodeCode');
+    constructor(serverUrl: string, apiKey: string, repoId: string) {
+        this.serverUrl = serverUrl;
+        this.apiKey = apiKey;
+        this.repoId = repoId;
     }
 
-    return response.data;
+    static async create(): Promise<RhodeCodeClient | undefined> {
+        const serverUrl = await config.getApiUrl();
+        const apiKey = await config.getApiKey();
+        const repoId = await config.getRepoId();
+        if (!serverUrl || !apiKey || !repoId) {
+            return undefined;
+        }
+        return new RhodeCodeClient(serverUrl, apiKey, repoId);
+    }
+
+    private async post<T>(method: string, args: Record<string, unknown>): Promise<RhodeCodeResponse<T>> {
+        const response = await axios.post<RhodeCodeResponse<T>>(
+            `${this.serverUrl}/_admin/api`,
+            {
+                id: '1',
+                api_key: this.apiKey,
+                method,
+                args
+            },
+            { timeout: 30000 }
+        );
+
+        if (response.status !== 200) {
+            throw new Error(`RhodeCode API returned HTTP ${response.status}`);
+        }
+        return response.data;
+    }
+
+    async getPullRequests(status: 'new' | 'open' | 'closed' = 'new'): Promise<RhodeCodePullRequest[]> {
+        const data = await this.post<RhodeCodePullRequest[]>('get_pull_requests', {
+            repoid: this.repoId,
+            status
+        });
+        this.throwIfError(data);
+        return data.result ?? [];
+    }
+
+    async commentOnPullRequest(
+        pullRequestId: string | number,
+        message: string,
+        status?: 'approved' | 'rejected' | 'under_review' | 'not_reviewed'
+    ): Promise<CommentResult> {
+        const args: Record<string, unknown> = {
+            repoid: this.repoId,
+            pullrequestid: pullRequestId,
+            message
+        };
+        if (status) {
+            args.status = status;
+        }
+        const data = await this.post<CommentResult>('comment_pull_request', args);
+        this.throwIfError(data);
+        return data.result!;
+    }
+
+    async approvePullRequest(pullRequestId: string | number): Promise<void> {
+        await this.commentOnPullRequest(pullRequestId, 'Approved from Visual Studio Code', 'approved');
+    }
+
+    async mergePullRequest(pullRequestId: string | number): Promise<void> {
+        const data = await this.post<{ executed?: boolean; failure_reason?: string; possible?: boolean }>(
+            'merge_pull_request',
+            { repoid: this.repoId, pullrequestid: pullRequestId }
+        );
+        this.throwIfError(data);
+    }
+
+    async closePullRequest(pullRequestId: string | number): Promise<void> {
+        const data = await this.post<{ closed?: boolean }>(
+            'close_pull_request',
+            { repoid: this.repoId, pullrequestid: pullRequestId }
+        );
+        this.throwIfError(data);
+    }
+
+    async createPullRequest(sourceRef: string, targetRef: string, name: string): Promise<void> {
+        const data = await this.post<unknown>('create_pull_request', {
+            source_repo: this.repoId,
+            target_repo: this.repoId,
+            source_ref: 'branch:' + sourceRef,
+            target_ref: 'branch:' + targetRef,
+            title: name
+        });
+        this.throwIfError(data);
+    }
+
+    async getRepoRefs(): Promise<RepoRefs> {
+        const data = await this.post<RepoRefs>('get_repo_refs', { repoid: this.repoId });
+        this.throwIfError(data);
+        return data.result!;
+    }
+
+    /**
+     * Fetch the rendered pull request page HTML. RhodeCode web routes accept
+     * the API key via the `api_key` query parameter, which is how we read the
+     * full comment thread (the JSON-RPC API has no "list comments" method).
+     */
+    async getPullRequestPage(pullRequestId: string | number): Promise<string> {
+        const url = `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}?api_key=${encodeURIComponent(this.apiKey)}`;
+        const response = await axios.get<string>(url, { timeout: 30000 });
+        return response.data;
+    }
+
+    pullRequestUrl(pullRequestId: string | number): string {
+        return `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}`;
+    }
+
+    private throwIfError<T>(data: RhodeCodeResponse<T>): void {
+        if (data.error) {
+            throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+        }
+    }
 }
 
-export async function getPullRequests() {
-    var repoId = await config.getRepoId();
-
-    return await postRequest<RhodeCodePullRequests[]>("get_pull_requests", {
-        "repoid": repoId
-    });
-}
-
-export async function aprovePullRequest(id: string) {
-    var repoId = await config.getRepoId();
-
-    return await postRequest("comment_pull_request", {
-        "repoid": repoId,
-        "pullrequestid": id,
-        "status": "approved",
-        "message": "Approved from Visual Studio Code"
-    });
-}
-
-export async function mergePullRequest(id: string) {
-    var repoId = await config.getRepoId();
-
-    return await postRequest("merge_pull_request", {
-        "repoid": repoId,
-        "pullrequestid": id
-    });
-}
-
-export async function getRepoRefs() {
-    var repoId = await config.getRepoId();
-
-    return await postRequest<RepoRefs>('get_repo_refs', {
-        repoid: repoId
-    });
-}
-
-export async function createPullRequest(sourceRef: string, targetRef: string, name: string) {
-    var repoId = await config.getRepoId();
-
-    return await postRequest('create_pull_request', {
-        source_repo: repoId,
-        target_repo: repoId,
-        source_ref: 'branch:' + sourceRef,
-        target_ref: 'branch:' + targetRef,
-        title: name
-    });
-}
-
-interface RhodeCodeResponse<T> {
-    id: any;
-    result: T | null;
-    error: any | null;
-}
-
-interface RepoRefs {
-    bookmarks:  {};
-    branches: { [key: string]: string };
-    branches_closed: {};
-    tags: {};
-}
-
-interface Mergeable {
-    status: string;
-    message: string;
-}
-
-interface Reference {
-    name: string;
-    type: string;
-    commit_id: string;
-}
-
-interface Source {
-    clone_url: string;
-    reference: Reference;
-}
-
-interface Reference2 {
-    name: string;
-    type: string;
-    commit_id: string;
-}
-
-interface Target {
-    clone_url: string;
-    reference: Reference2;
-}
-
-interface Reference3 {
-    name: string;
-    type: string;
-    commit_id: string;
-}
-
-interface Merge {
-    clone_url: string;
-    reference: Reference3;
-}
-
-interface Author {
-}
-
-export interface Reviewer {
-    user: string;
-    review_status: string;
-}
-
-export interface RhodeCodePullRequests {
-    pull_request_id: string;
-    url: string;
-    title: string;
-    description: string;
-    status: string;
-    created_on: string;
-    updated_on: string;
-    commit_ids: string[];
-    review_status: string;
-    mergeable: Mergeable;
-    source: Source;
-    target: Target;
-    merge: Merge;
-    author: Author;
-    reviewers: Reviewer[];
+export function reportError(operation: string, err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    window.showErrorMessage(`RhodeCode: ${operation} failed — ${message}`);
 }

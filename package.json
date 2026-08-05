@@ -1,55 +1,151 @@
 {
-    "name": "rhode-code-helpers",
-    "displayName": "RhodeCode Helpers",
-    "description": "Makes it easier to work with RhodeCode repositories",
-    "version": "0.0.1",
-    "publisher": "trifork-aalborg",
+    "name": "rhodecode-vscode-extension",
+    "displayName": "RhodeCode",
+    "description": "Work with RhodeCode pull requests and comments: view, reply, mark handled, approve, merge.",
+    "version": "0.2.0",
+    "publisher": "isaackehle",
     "repository": {
         "type": "git",
-        "url": "https://github.com/dimsedane/vscode-rhodecode.git"
+        "url": "https://github.com/isaackehle/rhodecode-vscode-extension.git"
     },
     "engines": {
-        "vscode": "^1.22.0"
+        "vscode": "^1.80.0"
     },
     "categories": [
         "Other"
     ],
-    "activationEvents": [
-        "onCommand:extension.openPullRequest",
-        "onCommand:extension.createPullRequest"
-    ],
+    "activationEvents": [],
     "main": "./out/extension",
     "contributes": {
         "commands": [
             {
-                "command": "extension.openPullRequest",
-                "title": "Show Pull Request",
-                "category": "RhodeCode"
+                "command": "rhodecode.refresh",
+                "title": "Refresh",
+                "category": "RhodeCode",
+                "icon": "$(refresh)"
             },
             {
-                "command": "extension.createPullRequest",
+                "command": "rhodecode.showPullRequests",
+                "title": "Show Pull Requests",
+                "category": "RhodeCode",
+                "icon": "$(git-pull-request)"
+            },
+            {
+                "command": "rhodecode.showComments",
+                "title": "Show Comments",
+                "category": "RhodeCode",
+                "icon": "$(comment)"
+            },
+            {
+                "command": "rhodecode.replyComment",
+                "title": "Reply to Comment",
+                "category": "RhodeCode",
+                "icon": "$(reply)"
+            },
+            {
+                "command": "rhodecode.markHandled",
+                "title": "Mark Comment Handled",
+                "category": "RhodeCode",
+                "icon": "$(check)"
+            },
+            {
+                "command": "rhodecode.markUnhandled",
+                "title": "Mark Comment Unhandled",
+                "category": "RhodeCode",
+                "icon": "$(circle-outline)"
+            },
+            {
+                "command": "rhodecode.createPullRequest",
                 "title": "Create Pull Request",
-                "category": "RhodeCode"
+                "category": "RhodeCode",
+                "icon": "$(git-pull-request-create)"
+            },
+            {
+                "command": "rhodecode.openPullRequest",
+                "title": "Open Pull Request in Browser",
+                "category": "RhodeCode",
+                "icon": "$(globe)"
+            },
+            {
+                "command": "rhodecode.approveAndMerge",
+                "title": "Approve and Merge",
+                "category": "RhodeCode",
+                "icon": "$(git-merge)"
             }
         ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "rhodecode",
+                    "title": "RhodeCode",
+                    "icon": "media/rhodecode-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "rhodecode": [
+                {
+                    "id": "rhodecode.pullRequests",
+                    "name": "Pull Requests",
+                    "icon": "media/rhodecode-icon.svg"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "rhodecode.refresh",
+                    "when": "view == rhodecode.pullRequests",
+                    "group": "navigation"
+                },
+                {
+                    "command": "rhodecode.showPullRequests",
+                    "when": "view == rhodecode.pullRequests",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "rhodecode.showComments",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
+                    "group": "inline"
+                },
+                {
+                    "command": "rhodecode.openPullRequest",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
+                    "group": "inline"
+                },
+                {
+                    "command": "rhodecode.approveAndMerge",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
+                    "group": "inline"
+                }
+            ]
+        },
         "configuration": [
             {
                 "title": "RhodeCode Configuration",
                 "properties": {
                     "rhodecode.serverurl": {
-                        "title": "Your rhodecode server URL",
+                        "title": "Your RhodeCode server URL",
                         "type": "string",
                         "default": ""
                     },
                     "rhodecode.apikey": {
-                        "title": "Your RhodeCode authkey",
+                        "title": "Your RhodeCode API key",
                         "type": "string",
                         "default": ""
                     },
                     "rhodecode.repoid": {
-                        "title": "The repository to use. This should be a workspace setting",
+                        "title": "The repository to use (workspace setting)",
                         "type": "string",
                         "default": ""
+                    },
+                    "rhodecode.markHandledPostsComment": {
+                        "title": "Post a reply comment on the PR when marking a comment as handled",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "When false, 'mark as handled' is tracked locally in VS Code only."
                     }
                 }
             }
@@ -59,17 +155,19 @@
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+        "package": "vsce package --no-dependencies",
+        "lint": "eslint src --ext ts"
     },
     "devDependencies": {
-        "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.43",
-        "tslint": "^5.8.0",
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.6"
+        "@types/node": "^20.11.0",
+        "@types/vscode": "^1.80.0",
+        "@typescript-eslint/eslint-plugin": "^7.0.0",
+        "@typescript-eslint/parser": "^7.0.0",
+        "@vscode/vsce": "^2.24.0",
+        "eslint": "^8.57.0",
+        "typescript": "^5.4.0"
     },
     "dependencies": {
-        "axios": "^0.18.0"
+        "axios": "^1.7.0"
     }
 }

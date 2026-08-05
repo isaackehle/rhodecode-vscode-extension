@@ -1,35 +1,62 @@
-# RhodeCode Helpers README
+# RhodeCode VS Code Extension
 
-RhodeCode Helpers is a utility extension for working with code repositories in RhodeCode.
+Work with [RhodeCode](https://rhodecode.com/) pull requests from Visual Studio Code: view the comment thread, reply to comments, and mark comments as handled — plus the original helper commands (create PR, approve & merge).
+
+Forked from [dimsedane/vscode-rhodecode](https://github.com/dimsedane/vscode-rhodecode) (MIT).
 
 ## Features
 
-Pullrequests is RhodeCode can be cumbersome, so this extension provides two helper commands:
+- **Pull Request view** — activity-bar view listing open pull requests with status and review status.
+- **Show comments** — opens a panel with the full comment thread for a pull request (author, date, vote/status change, text).
+- **Reply** — post a reply to the pull request thread from the panel or the command palette.
+- **Mark handled / unhandled** — toggle a local "handled" flag per comment (stored in VS Code workspace state; see note below).
+- **Create Pull Request** — helper to create a PR by source/target branch.
+- **Approve and Merge** — approve (if needed) and merge from the view or command palette.
 
-### Create Pullrequest
+## Requirements
 
-Creates a new pull request on the configured repository. You must enter the branch names of the source and target branches as well as a name for the pull request. A name is provided by default, but can be changed.
+A RhodeCode server with API access and an API key for your user.
 
-### Show PullRequests
+## Configuration
 
-Show all open pull reqeuests from the configured repository. Selecting a request will open it it the browser. When returning to code you have the option to merge the pullrequest. Doing so will automatically aprove and merge the request.
+Three settings are required (first use of a command will prompt for them):
 
-## Extension Settings
+| Setting | Where | Description |
+| --- | --- | --- |
+| `rhodecode.serverurl` | User/global | Your RhodeCode server URL (e.g. `https://rhodecode.example.com`) |
+| `rhodecode.apikey` | User/global | Your RhodeCode API key |
+| `rhodecode.repoid` | Workspace | The repository to use (name or ID) |
 
-There are 3 required cofigurations. First time use of either command will allow you to update the configuration if it is missing. Configuration is saved in the global configuration, except the `repoid`, which will be saved in the worksapace configuration.
+Optional:
 
-This extension contributes the following settings:
+| Setting | Default | Description |
+| --- | --- | --- |
+| `rhodecode.markHandledPostsComment` | `false` | Also post a "Marked as handled" reply comment on the PR thread when you mark a comment handled. |
 
-* `rhodecode.apikey`: An AuthKey from RhodeCode.
-* `rhodecode.serverurl`: The baseurl of your RhodeCode server.
-* `rhodecode.repoid`: The name of your remote repository. This should be configuered in the workspace configuration.
+## How comments work (important)
 
-## Known Issues
+The RhodeCode JSON-RPC API has no "list comments" or "resolve comment" methods. This extension works around that:
 
-Using the commands in a workspace without a configuration file may fail when loading the repoid configuration.
+- **Listing**: it fetches the pull request page HTML (`?api_key=...`) and parses the rendered comment blocks.
+- **Replying**: uses the `comment_pull_request` API method (creates a new comment on the PR thread).
+- **Marking handled**: tracked locally in VS Code workspace state, keyed by repo + PR + comment ID. RhodeCode itself has no server-side "resolved" flag that the API can set, so handled state does not appear on the RhodeCode web UI (unless you enable `markHandledPostsComment`).
 
-## Release Notes
+## Development
 
-### 0.0.1
+```shell
+npm install
+npm run compile      # tsc -> out/
+npm run package      # vsce package -> .vsix
+```
 
-Initial release to gain feedback
+## Release notes
+
+### 0.2.0
+
+- Modernized toolchain (TypeScript 5, VS Code 1.80+ engine, eslint, vsce).
+- Added activity-bar Pull Requests view.
+- Added comment thread panel with reply and mark-handled/unhandled.
+
+### 0.0.1 (upstream)
+
+- Original helper commands: create pull request, show pull requests, approve & merge.
