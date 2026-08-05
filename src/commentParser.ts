@@ -21,6 +21,7 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
     let match: RegExpExecArray | null;
     while ((match = blockPattern.exec(html)) !== null) {
         const commentId = match[1];
+        const openTag = match[0];
         const block = extractBalancedDiv(html, match.index);
 
         comments.push({
@@ -28,7 +29,9 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
             author: extractAuthor(block),
             date: extractDate(block),
             statusChange: extractStatusChange(block),
-            text: extractText(block)
+            text: extractText(block),
+            commentType: extractCommentType(openTag, block),
+            resolved: extractResolved(block)
         });
     }
 
@@ -42,12 +45,34 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
                 author: extractAuthor(block),
                 date: extractDate(block),
                 statusChange: extractStatusChange(block),
-                text: extractText(block)
+                text: extractText(block),
+                commentType: extractCommentType(match[0], block),
+                resolved: extractResolved(block)
             });
         }
     }
 
     return comments;
+}
+
+/**
+ * TODO comments carry data-comment-type="todo" on the comment div
+ * (modern UI) or a "comment-label todo" badge inside the block (older UI).
+ */
+function extractCommentType(openTag: string, block: string): 'todo' | 'note' | null {
+    const attr = openTag.match(/data-comment-type="([^"]*)"/);
+    if (attr) {
+        return attr[1] === 'todo' ? 'todo' : 'note';
+    }
+    if (/comment-label\s+todo|comment-type-label[^>]*todo|class="[^"]*\btodo\b[^"]*"/.test(block)) {
+        return 'todo';
+    }
+    return null;
+}
+
+/** A resolved task shows a `.resolved` marker inside the comment block. */
+function extractResolved(block: string): boolean {
+    return /class="[^"]*\bresolved\b[^"]*"/.test(block);
 }
 
 /**

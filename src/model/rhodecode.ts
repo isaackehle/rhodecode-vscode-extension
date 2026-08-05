@@ -63,11 +63,48 @@ export interface CommentResult {
     status: string | null;
 }
 
-/** A comment parsed from the PR page HTML. */
+/** A comment parsed from the PR page HTML (fallback path). */
 export interface PullRequestComment {
     commentId: string;
     author: string;
     date: string;
     statusChange: string | null;
     text: string;
+    /** 'todo' when this comment is a task, 'note' or null otherwise. */
+    commentType: 'todo' | 'note' | null;
+    /** True when the task comment has been resolved. */
+    resolved: boolean;
 }
+
+/* ------------------------------------------------------------------ */
+/* Modern API shapes (RhodeCode 4.6+, get_pull_request_comments)       */
+/* ------------------------------------------------------------------ */
+
+export interface CommentAuthor {
+    username: string;
+    full_name_or_username: string;
+    active: boolean;
+}
+
+export interface CommentStatus {
+    status: string;
+    status_lbl: string;
+}
+
+export interface PullRequestCommentData {
+    comment_id: number;
+    comment_type: 'note' | 'todo' | null;
+    comment_text: string;
+    comment_status: CommentStatus | Record<string, never>;
+    comment_f_path: string | null;
+    comment_lineno: string | null;
+    comment_author: CommentAuthor;
+    comment_created_on: string;
+    /** Set (the resolving comment) when this todo has been resolved. */
+    comment_resolved_by: unknown | null;
+    comment_commit_id: string | null;
+    comment_pull_request_id: number;
+    comment_last_version: number;
+    pull_request_version: string | null;
+}
+

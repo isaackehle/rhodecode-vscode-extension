@@ -137,6 +137,20 @@ export function registerCommands(
             if (!pr) {
                 return;
             }
+
+            // Check for open tasks (TODO comments): RhodeCode blocks merging
+            // while tasks are unresolved, so warn before attempting.
+            const openTasks = await countOpenTasks(client, pr);
+            if (openTasks > 0) {
+                const proceed = await vscode.window.showQuickPick(['No', 'Yes'], {
+                    ignoreFocusOut: true,
+                    placeHolder: `#${pr.pull_request_id} has ${openTasks} open task${openTasks > 1 ? 's' : ''}. Resolve them in the comments view first. Merge anyway?`
+                });
+                if (proceed !== 'Yes') {
+                    return;
+                }
+            }
+
             const answer = await vscode.window.showQuickPick(['Yes', 'No'], {
                 ignoreFocusOut: true,
                 placeHolder: `Approve and merge #${pr.pull_request_id}?`
@@ -220,4 +234,18 @@ async function pickPullRequest(client: RhodeCodeClient): Promise<RhodeCodePullRe
         { placeHolder: 'Select a pull request' }
     );
     return picked?.pr;
+}
+
+/**
+ * Count open tasks (TODO comments not yet resolved). Best effort: on
+ * servers without get_pull_request_comments (pre-4.6) returns 0 so the
+ * merge flow is not blocked by a version mismatch.
+ */
+async function countOpenTasks(client: RhodeCodeClient, pr: RhodeCodePullRequest): Promise<number> {
+    try {
+        const comments = await client.getPullRequestComments(pr.pull_request_id);
+        return comments.filter((c) => c.comment_type === 'todo' && !c.comment_resolved_by).length;
+    } catch {
+        return 0;
+    }
 }

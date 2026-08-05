@@ -1,8 +1,8 @@
 {
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
-    "description": "Work with RhodeCode pull requests and comments: view, reply, mark handled, approve, merge.",
-    "version": "0.2.0",
+    "description": "Work with RhodeCode pull requests and comments: view, reply, resolve tasks, mark handled, approve, merge.",
+    "version": "0.3.0",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",

@@ -7,11 +7,12 @@ Forked from [dimsedane/vscode-rhodecode](https://github.com/dimsedane/vscode-rho
 ## Features
 
 - **Pull Request view** — activity-bar view listing open pull requests with status and review status.
-- **Show comments** — opens a panel with the full comment thread for a pull request (author, date, vote/status change, text).
+- **Show comments** — opens a panel with the full comment thread for a pull request (author, date, vote/status change, text). Comments can be read for any PR you pick interactively — no PR id in settings.
+- **Tasks (TODO comments)** — task comments are shown with a **TASK** badge and their open/resolved state. Resolve a task right from the panel (this posts a resolving comment on the server, unblocking the merge). You can also create new tasks.
 - **Reply** — post a reply to the pull request thread from the panel or the command palette.
 - **Mark handled / unhandled** — toggle a local "handled" flag per comment (stored in VS Code workspace state; see note below).
+- **Approve and Merge** — warns when the PR has open tasks (RhodeCode blocks merging while tasks are unresolved), then approves (if needed) and merges.
 - **Create Pull Request** — helper to create a PR by source/target branch.
-- **Approve and Merge** — approve (if needed) and merge from the view or command palette.
 
 ## Requirements
 
@@ -33,13 +34,13 @@ Optional:
 | --- | --- | --- |
 | `rhodecode.markHandledPostsComment` | `false` | Also post a "Marked as handled" reply comment on the PR thread when you mark a comment handled. |
 
-## How comments work (important)
+## How comments work
 
-The RhodeCode JSON-RPC API has no "list comments" or "resolve comment" methods. This extension works around that:
-
-- **Listing**: it fetches the pull request page HTML (`?api_key=...`) and parses the rendered comment blocks.
+- **Listing**: RhodeCode 4.6+ exposes `get_pull_request_comments`, which this extension uses first — it returns structured comments including `comment_type` (`note`/`todo`) and the resolved state (`comment_resolved_by`). On older servers the extension falls back to fetching the pull request page HTML (`?api_key=...`) and parsing the rendered comment blocks (TODO comments are detected via `data-comment-type="todo"` / resolved markers).
 - **Replying**: uses the `comment_pull_request` API method (creates a new comment on the PR thread).
-- **Marking handled**: tracked locally in VS Code workspace state, keyed by repo + PR + comment ID. RhodeCode itself has no server-side "resolved" flag that the API can set, so handled state does not appear on the RhodeCode web UI (unless you enable `markHandledPostsComment`).
+- **Resolving a task**: `comment_pull_request` with `resolves_comment_id=<todo comment id>`. The server creates a resolving comment and marks the task done, which is what unblocks merging.
+- **Creating a task**: `comment_pull_request` with `comment_type='todo'`.
+- **Marking handled**: tracked locally in VS Code workspace state, keyed by repo + PR + comment ID. RhodeCode has no server-side "resolved" flag for plain comments, so handled state does not appear on the RhodeCode web UI (unless you enable `markHandledPostsComment`). This is distinct from tasks — tasks are real server-side state.
 
 ## Development
 
@@ -50,6 +51,12 @@ npm run package      # vsce package -> .vsix
 ```
 
 ## Release notes
+
+### 0.3.0
+
+- Task (TODO comment) support: read tasks from the server (`get_pull_request_comments` on RhodeCode 4.6+, HTML fallback on older servers), resolve tasks via `resolves_comment_id`, create tasks via `comment_type='todo'`.
+- Approve and Merge now warns when a pull request has open tasks before merging.
+- Comment panel shows task badges, resolved state, and a task summary line.
 
 ### 0.2.0
 

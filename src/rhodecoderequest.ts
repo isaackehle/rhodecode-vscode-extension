@@ -3,6 +3,7 @@ import { window } from 'vscode';
 import * as config from './configuration';
 import {
     CommentResult,
+    PullRequestCommentData,
     RepoRefs,
     RhodeCodePullRequest,
     RhodeCodeResponse
@@ -74,6 +75,51 @@ export class RhodeCodeClient {
             args.status = status;
         }
         const data = await this.post<CommentResult>('comment_pull_request', args);
+        this.throwIfError(data);
+        return data.result!;
+    }
+
+    /**
+     * List all comments on a pull request (modern API, RhodeCode 4.6+).
+     * Throws when the server does not support the method (fall back to
+     * HTML parsing in that case).
+     */
+    async getPullRequestComments(pullRequestId: string | number): Promise<PullRequestCommentData[]> {
+        const data = await this.post<PullRequestCommentData[]>('get_pull_request_comments', {
+            pullrequestid: pullRequestId,
+            repoid: this.repoId
+        });
+        this.throwIfError(data);
+        return data.result ?? [];
+    }
+
+    /**
+     * Close a task (TODO comment) on a pull request. Creates a resolving
+     * comment; the server rejects the call if the comment is not a todo.
+     */
+    async resolveTodoComment(
+        pullRequestId: string | number,
+        commentId: string | number,
+        message: string
+    ): Promise<CommentResult> {
+        const data = await this.post<CommentResult>('comment_pull_request', {
+            repoid: this.repoId,
+            pullrequestid: pullRequestId,
+            message,
+            resolves_comment_id: commentId
+        });
+        this.throwIfError(data);
+        return data.result!;
+    }
+
+    /** Create a new task (TODO comment) on a pull request. */
+    async addTodoComment(pullRequestId: string | number, message: string): Promise<CommentResult> {
+        const data = await this.post<CommentResult>('comment_pull_request', {
+            repoid: this.repoId,
+            pullrequestid: pullRequestId,
+            message,
+            comment_type: 'todo'
+        });
         this.throwIfError(data);
         return data.result!;
     }
