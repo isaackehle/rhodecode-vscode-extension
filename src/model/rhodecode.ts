@@ -57,6 +57,27 @@ export interface RepoRefs {
     tags: Record<string, string>;
 }
 
+/** A repository group (folder) the user can access. */
+export interface RepoGroup {
+    group_id: number;
+    group_name: string;
+    group_description: string | null;
+    owner: string | null;
+    parent_group: string | null;
+}
+
+/** A repository the user can access (get_repos). */
+export interface RepoInfo {
+    repo_id: number;
+    repo_name: string;
+    repo_type: string; // 'git' | 'hg' | 'svn'
+    clone_uri: string | null;
+    private: boolean;
+    description: string | null;
+    owner: string | null;
+    fork_of: string | null;
+}
+
 export interface CommentResult {
     pull_request_id: string | number;
     comment_id: string | number;

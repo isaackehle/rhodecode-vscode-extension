@@ -3,14 +3,67 @@ import { RhodeCodeClient, reportError } from './rhodecoderequest';
 import { RhodeCodePullRequest } from './model/rhodecode';
 import { PullRequestItem, PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { CommentViewProvider } from './commentViewProvider';
+import { setupConnection, browseRepositories } from './serverSetup';
+import { setApiKey, setRepoId, setServerUrl } from './configuration';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
     getClient: () => RhodeCodeClient | undefined,
     tree: PullRequestTreeProvider,
-    commentView: CommentViewProvider
+    commentView: CommentViewProvider,
+    setClient: (client: RhodeCodeClient | undefined) => void
 ): void {
     context.subscriptions.push(
+        vscode.commands.registerCommand('rhodecode.connect', async () => {
+            try {
+                const result = await setupConnection();
+                if (!result) {
+                    return;
+                }
+                // Persist all settings at once so a cancelled wizard never
+                // leaves partial configuration behind.
+                await setServerUrl(result.serverUrl);
+                await setApiKey(result.apiKey);
+                await setRepoId(result.repo.repo_name);
+                setClient(result.client);
+                vscode.window.showInformationMessage(
+                    `Connected to ${result.serverUrl} — repository "${result.repo.repo_name}" selected.`
+                );
+                await tree.load();
+            } catch (err) {
+                reportError('connect', err);
+            }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.selectRepository', async () => {
+            const client = getClient();
+            if (!client) {
+                await vscode.commands.executeCommand('rhodecode.connect');
+                return;
+            }
+            try {
+                const repo = await browseRepositories(client);
+                if (!repo) {
+                    return;
+                }
+                await setRepoId(repo.repo_name);
+                // Rebuild the client so it points at the newly chosen repo.
+                setClient(new RhodeCodeClient(client.getServerUrl(), client.getApiKey(), repo.repo_name));
+                tree.refresh();
+                await tree.load();
+            } catch (err) {
+                reportError('select repository', err);
+            }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.openChangeset', async (sha?: string) => {
+            const client = getClient();
+            if (!client || !sha) {
+                return;
+            }
+            await vscode.env.openExternal(vscode.Uri.parse(client.changesetUrl(sha)));
+        }),
+
         vscode.commands.registerCommand('rhodecode.refresh', async () => {
             const client = getClient();
             if (!client) {

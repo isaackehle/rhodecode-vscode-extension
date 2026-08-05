@@ -4,6 +4,8 @@ import * as config from './configuration';
 import {
     CommentResult,
     PullRequestCommentData,
+    RepoGroup,
+    RepoInfo,
     RepoRefs,
     RhodeCodePullRequest,
     RhodeCodeResponse
@@ -162,6 +164,27 @@ export class RhodeCodeClient {
     }
 
     /**
+     * All repository groups the user can read (get_repo_groups).
+     * Also used as a cheap connection check (throws if the server or API
+     * key is invalid).
+     */
+    async getRepoGroups(): Promise<RepoGroup[]> {
+        const data = await this.post<RepoGroup[]>('get_repo_groups', {});
+        this.throwIfError(data);
+        return data.result ?? [];
+    }
+
+    /**
+     * All repositories the user can access (get_repos, traverse=true).
+     * repo_name is the full path, e.g. "team/services/api".
+     */
+    async getRepos(): Promise<RepoInfo[]> {
+        const data = await this.post<RepoInfo[]>('get_repos', {});
+        this.throwIfError(data);
+        return data.result ?? [];
+    }
+
+    /**
      * Fetch the rendered pull request page HTML. RhodeCode web routes accept
      * the API key via the `api_key` query parameter, which is how we read the
      * full comment thread (the JSON-RPC API has no "list comments" method).
@@ -174,6 +197,18 @@ export class RhodeCodeClient {
 
     pullRequestUrl(pullRequestId: string | number): string {
         return `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}`;
+    }
+
+    changesetUrl(sha: string): string {
+        return `${this.serverUrl}/${encodeURIComponent(this.repoId)}/changeset/${sha}`;
+    }
+
+    getServerUrl(): string {
+        return this.serverUrl;
+    }
+
+    getApiKey(): string {
+        return this.apiKey;
     }
 
     private throwIfError<T>(data: RhodeCodeResponse<T>): void {

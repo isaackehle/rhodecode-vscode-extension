@@ -22,7 +22,11 @@ export function activate(context: vscode.ExtensionContext): void {
     });
     context.subscriptions.push(treeView);
 
-    registerCommands(context, () => client, tree, commentView);
+    const setClient = (c: RhodeCodeClient | undefined): void => {
+        client = c;
+    };
+
+    registerCommands(context, () => client, tree, commentView, setClient);
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {

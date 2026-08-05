@@ -6,9 +6,12 @@ Forked from [dimsedane/vscode-rhodecode](https://github.com/dimsedane/vscode-rho
 
 ## Features
 
-- **Pull Request view** — activity-bar view listing open pull requests with status and review status.
-- **Show comments** — opens a panel with the full comment thread for a pull request (author, date, vote/status change, text). Comments can be read for any PR you pick interactively — no PR id in settings.
-- **Tasks (TODO comments)** — task comments are shown with a **TASK** badge and their open/resolved state. Resolve a task right from the panel (this posts a resolving comment on the server, unblocking the merge). You can also create new tasks.
+- **Connect to RhodeCode…** — guided setup: enter the server address (format-validated, bare hosts get `https://`), paste your API key, and the extension verifies the connection against the server before offering anything.
+- **Select Repository…** — browse the repository groups and repositories you have access to (server-side permission filtered), with type-to-filter and drill-down into groups. Selecting a repo saves it to your workspace settings and reloads the view.
+- **Branches & Tags** — the view shows branches and tags of the selected repository (name + short commit), with open-in-browser for any ref.
+- **Pull Request view** — pull requests with status and review status.
+- **Show comments** — the full comment thread for a pull request (author, date, vote/status change, text). Works for any PR you pick interactively — no PR id in settings.
+- **Tasks (TODO comments)** — task comments show a **TASK** badge with open/resolved state. Resolve a task from the panel (posts a resolving comment server-side, unblocking the merge). Create new tasks too.
 - **Reply** — post a reply to the pull request thread from the panel or the command palette.
 - **Mark handled / unhandled** — toggle a local "handled" flag per comment (stored in VS Code workspace state; see note below).
 - **Approve and Merge** — warns when the PR has open tasks (RhodeCode blocks merging while tasks are unresolved), then approves (if needed) and merges.
@@ -20,13 +23,13 @@ A RhodeCode server with API access and an API key for your user.
 
 ## Configuration
 
-Three settings are required (first use of a command will prompt for them):
+Server URL, API key and repository can all be set through **Connect to RhodeCode…** / **Select Repository…** (recommended). They are also available as settings:
 
 | Setting | Where | Description |
 | --- | --- | --- |
 | `rhodecode.serverurl` | User/global | Your RhodeCode server URL (e.g. `https://rhodecode.example.com`) |
 | `rhodecode.apikey` | User/global | Your RhodeCode API key |
-| `rhodecode.repoid` | Workspace | The repository to use (name or ID) |
+| `rhodecode.repoid` | Workspace | The repository to use (full path name or ID) — set automatically when you pick a repository |
 
 Optional:
 
@@ -51,6 +54,13 @@ npm run package      # vsce package -> .vsix
 ```
 
 ## Release notes
+
+### 0.4.0
+
+- Connection wizard (Connect to RhodeCode…): format-validated server address, API key, live connection check, then a group/repo browser with type-to-filter and drill-down; repo saved to workspace settings.
+- Branches and Tags sections in the view (from `get_repo_refs`), with open-changeset-in-browser.
+- Server/repo discovery via `get_repo_groups` + `get_repos` (permission filtered).
+- Tree view restructured into Pull Requests / Branches / Tags sections with a "Set up connection…" placeholder when unconfigured.
 
 ### 0.3.0
 

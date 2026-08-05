@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.0 - 2026-08-05
+
+- Connection wizard (Connect to RhodeCode…): format-validated server address, API key, live connection check, then a group/repo browser with type-to-filter and drill-down; repo saved to workspace settings.
+- Branches and Tags sections in the view (from `get_repo_refs`), with open-changeset-in-browser.
+- Server/repo discovery via `get_repo_groups` + `get_repos` (permission filtered).
+- Tree view restructured into Pull Requests / Branches / Tags sections with a "Set up connection…" placeholder when unconfigured.
+
 ## 0.3.0 - 2026-08-05
 
 - Task (TODO comment) support: read tasks from the server (`get_pull_request_comments` on RhodeCode 4.6+, HTML fallback on older servers), resolve tasks via `resolves_comment_id`, create tasks via `comment_type='todo'`.

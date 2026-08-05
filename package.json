@@ -1,8 +1,8 @@
 {
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
-    "description": "Work with RhodeCode pull requests and comments: view, reply, resolve tasks, mark handled, approve, merge.",
-    "version": "0.3.0",
+    "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
+    "version": "0.4.0",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",
@@ -71,6 +71,24 @@
                 "title": "Approve and Merge",
                 "category": "RhodeCode",
                 "icon": "$(git-merge)"
+            },
+            {
+                "command": "rhodecode.connect",
+                "title": "Connect to RhodeCode…",
+                "category": "RhodeCode",
+                "icon": "$(plug)"
+            },
+            {
+                "command": "rhodecode.selectRepository",
+                "title": "Select Repository…",
+                "category": "RhodeCode",
+                "icon": "$(repo)"
+            },
+            {
+                "command": "rhodecode.openChangeset",
+                "title": "Open Changeset in Browser",
+                "category": "RhodeCode",
+                "icon": "$(globe)"
             }
         ],
         "viewsContainers": {
@@ -102,6 +120,16 @@
                     "command": "rhodecode.showPullRequests",
                     "when": "view == rhodecode.pullRequests",
                     "group": "navigation"
+                },
+                {
+                    "command": "rhodecode.connect",
+                    "when": "view == rhodecode.pullRequests",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "rhodecode.selectRepository",
+                    "when": "view == rhodecode.pullRequests",
+                    "group": "navigation@3"
                 }
             ],
             "view/item/context": [
@@ -118,6 +146,16 @@
                 {
                     "command": "rhodecode.approveAndMerge",
                     "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
+                    "group": "inline"
+                },
+                {
+                    "command": "rhodecode.openChangeset",
+                    "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/",
+                    "group": "inline"
+                },
+                {
+                    "command": "rhodecode.connect",
+                    "when": "view == rhodecode.pullRequests && viewItem == setup",
                     "group": "inline"
                 }
             ]
@@ -139,7 +177,8 @@
                     "rhodecode.repoid": {
                         "title": "The repository to use (workspace setting)",
                         "type": "string",
-                        "default": ""
+                        "default": "",
+                        "description": "Repository name (full path, e.g. team/services/api) or numeric ID. Set automatically when you pick a repository from the browser (Select Repository… / Connect)."
                     },
                     "rhodecode.markHandledPostsComment": {
                         "title": "Post a reply comment on the PR when marking a comment as handled",
