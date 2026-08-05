@@ -5,5 +5,21 @@
     },
     "search.exclude": {
         "out": true // set this to false to include "out" folder in search results
-    }
+    },
+    "rumdl.configPath": ".rumdl.toml",
+    "cSpell.words": [
+        "apikey",
+        "bunx",
+        "dimsedane",
+        "dimsedane's",
+        "oxfmt",
+        "oxfmtrc",
+        "oxlint",
+        "oxlintrc",
+        "repoid",
+        "rhodecode",
+        "rumdl",
+        "serverurl",
+        "unconfigured"
+    ]
 }
