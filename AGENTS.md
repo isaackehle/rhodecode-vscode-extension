@@ -1,16 +1,19 @@
 # RhodeCode VS Code Extension — Agent Instructions
 
-This file is the canonical behavior reference for any AI coding agent (Hermes, Claude Code, Codex, OpenCode, Cline, Copilot) working in this repo.
+This file is the canonical behavior reference for any AI coding agent (Hermes, Claude Code, Codex, OpenCode, Cline, Copilot)
+working in this repo.
 
 ## What This Is
 
-A VS Code extension for [RhodeCode](https://rhodecode.com/) pull request workflows. It talks to a RhodeCode server via its JSON-RPC API (`POST {server}/_admin/api`) and renders PRs, comments, and branches in VS Code views.
+A VS Code extension for [RhodeCode](https://rhodecode.com/) pull request workflows. It talks to a RhodeCode server via its
+JSON-RPC API (`POST {server}/_admin/api`) and renders PRs, comments, and branches in VS Code views.
 
-**Do not treat this as a generic "extension" task.** The server API has real quirks (see `src/rhodecoderequest.ts` and the vscode-extension-development skill references). Read the code before editing.
+**Do not treat this as a generic "extension" task.** The server API has real quirks (see `src/rhodecoderequest.ts` and the
+vscode-extension-development skill references). Read the code before editing.
 
 ## Repository Layout
 
-```
+```text
 src/rhodecoderequest.ts      API client: JSON-RPC over axios; all server calls go through here
 src/model/rhodecode.ts       Domain types (PRs, comments, tasks, refs, groups, repos)
 src/configuration.ts         Settings accessors + URL validation (normalizeServerUrl)
@@ -62,11 +65,30 @@ npm run package      # vsce package -> .vsix
 - Commands: prefix `rhodecode.`; register in BOTH `package.json` contributions and `src/commands.ts`.
 - No `Co-Authored-By` trailers. Conventional Commits, subject ≤ 72 chars: `feat(comments): ...`, `fix(api): ...`, `chore(toolchain): ...`.
 
+## Versioning & Releases
+
+- Every release gets an annotated git tag `v<version>` on the commit that bumps `package.json` version, plus a GitHub
+  Release with the `.vsix` attached.
+- When you bump the version, tag it in the same step:
+
+  ```shell
+  git tag -a v0.7.0 -m "v0.7.0: <one-line summary>"
+  git push origin master --tags
+  ```
+
+- The GitHub Release body is the CHANGELOG entry for that version; attach the packaged `.vsix` (`npm run package`).
+- Keep one tag per version bump commit, pointing at the exact commit where the version changed (use `git log` +
+  `git show <sha>:package.json` to find it, not just the latest commit).
+
 ## Verify Before Finishing
 
 ```shell
-npm run lint && npm run format:check && npm run compile && npm run package
+npm run lint && npm run lint:md && npm run format:check && npm run compile && npm run package
 ```
 
-- The tree view has a "Set up connection…" placeholder when unconfigured — don't break the onboarding path.
+- `npm run lint:md` runs `rumdl check .` — markdown must stay clean (`.rumdl.toml`, line width 160).
+- The view shows a viewsWelcome "Set up connection…" panel when unconfigured — don't break the onboarding path.
+- `activationEvents` in `package.json` must list EVERY contributed command (`onCommand:rhodecode.*`) plus
+  `onView:rhodecode.pullRequests`. An empty `[]` means the extension never activates on fresh installs and every command
+  fails with "command not found".
 - After packaging, optionally `code --install-extension <file>.vsix --force` and confirm it lists.

@@ -7,3 +7,11 @@ src/**
 tsconfig.json
 .eslintrc.json
 node_modules/**
+.lefthook.yml
+.rumdl.toml
+.oxlintrc.json
+.oxfmtrc.json
+AGENTS.md
+.rumdl_cache/**
+ISSUES.md
+issues.md

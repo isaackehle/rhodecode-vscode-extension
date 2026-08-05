@@ -2,7 +2,7 @@
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",
@@ -14,7 +14,21 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": [],
+    "activationEvents": [
+        "onView:rhodecode.pullRequests",
+        "onCommand:rhodecode.connect",
+        "onCommand:rhodecode.selectRepository",
+        "onCommand:rhodecode.openChangeset",
+        "onCommand:rhodecode.refresh",
+        "onCommand:rhodecode.showPullRequests",
+        "onCommand:rhodecode.showComments",
+        "onCommand:rhodecode.replyComment",
+        "onCommand:rhodecode.markHandled",
+        "onCommand:rhodecode.markUnhandled",
+        "onCommand:rhodecode.openPullRequest",
+        "onCommand:rhodecode.approveAndMerge",
+        "onCommand:rhodecode.createPullRequest"
+    ],
     "main": "./out/extension",
     "contributes": {
         "commands": [
@@ -198,8 +212,10 @@
         "watch": "tsc -watch -p ./",
         "package": "vsce package --no-dependencies",
         "lint": "oxlint src",
+        "lint:md": "rumdl check .",
         "format": "oxfmt --write \"src/**/*.ts\"",
-        "format:check": "oxfmt --check \"src/**/*.ts\""
+        "format:check": "oxfmt --check \"src/**/*.ts\"",
+        "format:md": "rumdl fmt ."
     },
     "devDependencies": {
         "@types/node": "^20.11.0",

@@ -1,0 +1,26 @@
+# .lefthook.yml
+
+pre-commit:
+  parallel: true
+  commands:
+    oxlint:
+      glob: "*.{js,ts}"
+      skip_empty: true
+      run: npx oxlint --fix {staged_files}
+    oxfmt:
+      glob: "*.{js,ts}"
+      skip_empty: true
+      run: npx oxfmt --write {staged_files}
+    rumdl:
+      glob: "*.md"
+      run: rumdl check {staged_files}
+
+pre-push:
+  parallel: true
+  commands:
+    oxlint:
+      run: npm run lint
+    oxfmt:
+      run: npm run format:check
+    rumdl:
+      run: rumdl check .

@@ -1,0 +1,33 @@
+# rumdl configuration file
+
+[global]
+# List of file/directory patterns to exclude from linting
+exclude = [
+    ".git",
+    ".github",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    "out",
+]
+
+# Respect .gitignore files when scanning directories (default: true)
+respect-gitignore = true
+
+# Markdown flavor/dialect
+flavor = "gfm"
+
+# Rule-specific configurations
+
+[MD013]
+line-length = 160  # Line length
+code-blocks = false  # Exclude code blocks from line length check
+tables = false  # Exclude tables from line length check
+
+[MD007]
+indent = 4  # Unordered list indentation
+
+[MD033]
+# Allow inline HTML where needed
+allowed-elements = ["kbd", "br"]

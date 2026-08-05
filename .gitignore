@@ -2,3 +2,6 @@ out
 node_modules
 .vscode-test/
 *.vsix
+.rumdl_cache/
+ISSUES.md
+issues.md
