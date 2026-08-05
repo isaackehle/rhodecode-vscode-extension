@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.8.0 - 2026-08-05
+
+- Feat: repository is now auto-detected. The `rhodecode.repoid` setting is gone — on activation the extension reads
+  `git config --get remote.origin.url`, matches it against the `clone_uri` of accessible repos (`get_repos`), and
+  stores the matching repo (`repo_id` + metadata) in workspace state. Handles https, ssh://, and scp-like remotes
+  (#4).
+- Feat: API key can come from an environment file. `RHODECODE_API_KEY` is read from the workspace `.env` first, then
+  `~/.env`, then falls back to the `rhodecode.apikey` setting (#2).
+- Design: Settings UI shows proper display names (Server URL, API Key) instead of raw key casing (#3).
+
 ## 0.7.0 - 2026-08-05
 
 - Feat: empty API key in the Connect wizard now shows a modal with the exact steps to create a RhodeCode auth token

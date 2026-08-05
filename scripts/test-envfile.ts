@@ -26,7 +26,11 @@ const envCases: Array<{ name: string; input: string; want: Record<string, string
 ];
 
 const pathCases: Array<{ name: string; input: string; want: string | undefined }> = [
-    { name: 'https', input: 'https://github.com/isaackehle/rhodecode-vscode-extension.git', want: 'isaackehle/rhodecode-vscode-extension' },
+    {
+        name: 'https',
+        input: 'https://github.com/isaackehle/rhodecode-vscode-extension.git',
+        want: 'isaackehle/rhodecode-vscode-extension',
+    },
     { name: 'http', input: 'http://git.example.com/team/services/api.git', want: 'team/services/api' },
     { name: 'ssh', input: 'ssh://git@github.com/isaackehle/repo.git', want: 'isaackehle/repo' },
     { name: 'scp-like', input: 'git@github.com:isaackehle/repo.git', want: 'isaackehle/repo' },
@@ -36,9 +40,24 @@ const pathCases: Array<{ name: string; input: string; want: string | undefined }
 ];
 
 const matchCases: Array<{ name: string; a: string | null; b: string; want: boolean }> = [
-    { name: 'same https', a: 'https://github.com/isaackehle/repo.git', b: 'https://github.com/isaackehle/repo.git', want: true },
-    { name: 'scp vs https', a: 'git@github.com:isaackehle/repo.git', b: 'https://github.com/isaackehle/repo.git', want: true },
-    { name: 'different repo', a: 'https://github.com/isaackehle/other.git', b: 'https://github.com/isaackehle/repo.git', want: false },
+    {
+        name: 'same https',
+        a: 'https://github.com/isaackehle/repo.git',
+        b: 'https://github.com/isaackehle/repo.git',
+        want: true,
+    },
+    {
+        name: 'scp vs https',
+        a: 'git@github.com:isaackehle/repo.git',
+        b: 'https://github.com/isaackehle/repo.git',
+        want: true,
+    },
+    {
+        name: 'different repo',
+        a: 'https://github.com/isaackehle/other.git',
+        b: 'https://github.com/isaackehle/repo.git',
+        want: false,
+    },
     { name: 'null clone_uri', a: null, b: 'https://github.com/isaackehle/repo.git', want: false },
 ];
 
@@ -65,5 +84,9 @@ for (const c of matchCases) {
     check(c.name, cloneUrisMatch(c.a, c.b) === c.want, `want ${c.want} got ${cloneUrisMatch(c.a, c.b)}`);
 }
 
-console.log(failures === 0 ? `\nAll ${envCases.length + pathCases.length + matchCases.length} tests passed` : `\n${failures} test(s) FAILED`);
+console.log(
+    failures === 0
+        ? `\nAll ${envCases.length + pathCases.length + matchCases.length} tests passed`
+        : `\n${failures} test(s) FAILED`,
+);
 process.exit(failures === 0 ? 0 : 1);
