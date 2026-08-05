@@ -175,8 +175,30 @@ export async function promptApiKey(): Promise<string | undefined> {
     }
     const key = input.trim();
     if (!key) {
-        vscode.window.showErrorMessage('RhodeCode: API key must not be empty.');
+        await showTokenHelp();
         return undefined;
     }
     return key;
+}
+
+/** Explain where to create a RhodeCode API token, then re-open the prompt. */
+async function showTokenHelp(): Promise<void> {
+    const help = [
+        'RhodeCode API key must not be empty.',
+        'Create a token in your account settings:',
+        '1. Click the user name dropdown in the upper right corner',
+        '2. Select My Account',
+        '3. Select Auth Tokens in the Left Menu bar',
+        '4. Create a New authentication token',
+        '   a. Set a Description/name',
+        '   b. Set or Enter an expiration date (or Lifetime forever)',
+        '   c. Set the Role (all is default)',
+        '   d. Set Scopes, if applicable',
+        '5. Click Add',
+        '6. Save the number in the User Settings',
+    ].join('\n');
+    const retry = await vscode.window.showErrorMessage(help, { modal: true }, 'Retry');
+    if (retry === 'Retry') {
+        await promptApiKey();
+    }
 }

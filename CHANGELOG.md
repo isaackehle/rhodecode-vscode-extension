@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.7.0 - 2026-08-05
+
+- Feat: empty API key in the Connect wizard now shows a modal with the exact steps to create a RhodeCode auth token
+  (user dropdown → My Account → Auth Tokens → Create), with a Retry button that reopens the prompt.
+- Chore: bun is now the package manager (`bun install` → `bun.lock`); scripts and lefthook hooks run through bun/bunx.
+- Docs: AGENTS.md documents the lockfile-commit rule and bun toolchain; README Development section updated.
+
 ## 0.6.2 - 2026-08-05
 
 - Fix: extension icon. Added the top-level `icon` field (128x128 PNG) so the Extensions view shows the RhodeCode

@@ -35,16 +35,17 @@ media/rhodecode-icon.svg     activity-bar icon (must be transparent-bg monochrom
 - `@vscode/vsce` for packaging
 
 ```shell
-npm install
-npm run compile      # tsc -> out/
-npm run lint         # oxlint src
-npm run format       # oxfmt --write src
-npm run package      # vsce package -> .vsix
+bun install
+bun run compile      # tsc -> out/
+bun run lint         # oxlint src
+bun run format       # oxfmt --write src
+bun run package      # vsce package -> .vsix
 ```
 
+- bun is the package manager (lockfile: `bun.lock`); `npm run ...` works too — scripts are identical.
 - `.oxlintrc.json` — lint rules (unused-vars / no-explicit-any are warnings)
 - `.oxfmtrc.json` — 4-space indent, single quotes, print width 120, semicolons, trailing commas — **preserve this style**
-- Run `npm run format` after edits; the tree must stay `npm run format:check`-clean
+- Run `bun run format` after edits; the tree must stay `bun run format:check`-clean
 - README.md / CHANGELOG.md must stay markdown-lint clean
 
 ## API Facts (verified against RhodeCode source)
@@ -66,6 +67,8 @@ npm run package      # vsce package -> .vsix
 - The client is rebuilt after repo selection so `repoId` matches the picked repo.
 - Commands: prefix `rhodecode.`; register in BOTH `package.json` contributions and `src/commands.ts`.
 - No `Co-Authored-By` trailers. Conventional Commits, subject ≤ 72 chars: `feat(comments): ...`, `fix(api): ...`, `chore(toolchain): ...`.
+- Commit the lockfile whenever dependencies change (`bun install` updates `bun.lock`, `npm install` updates
+  `package-lock.json`) — a stale lockfile silently pins old versions for everyone who installs later.
 
 ## Versioning & Releases
 
@@ -78,17 +81,17 @@ npm run package      # vsce package -> .vsix
   git push origin master --tags
   ```
 
-- The GitHub Release body is the CHANGELOG entry for that version; attach the packaged `.vsix` (`npm run package`).
+- The GitHub Release body is the CHANGELOG entry for that version; attach the packaged `.vsix` (`bun run package`).
 - Keep one tag per version bump commit, pointing at the exact commit where the version changed (use `git log` +
   `git show <sha>:package.json` to find it, not just the latest commit).
 
 ## Verify Before Finishing
 
 ```shell
-npm run lint && npm run lint:md && npm run format:check && npm run compile && npm run package
+bun run lint && bun run lint:md && bun run format:check && bun run compile && bun run package
 ```
 
-- `npm run lint:md` runs `rumdl check .` — markdown must stay clean (`.rumdl.toml`, line width 160).
+- `bun run lint:md` runs `rumdl check .` — markdown must stay clean (`.rumdl.toml`, line width 160).
 - The view shows a viewsWelcome "Set up connection…" panel when unconfigured — don't break the onboarding path.
 - `activationEvents` in `package.json` must list EVERY contributed command (`onCommand:rhodecode.*`) plus
   `onView:rhodecode.pullRequests`. An empty `[]` means the extension never activates on fresh installs and every command

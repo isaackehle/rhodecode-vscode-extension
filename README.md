@@ -87,14 +87,24 @@ Optional:
 ## Development
 
 ```shell
-npm install
-npm run compile      # tsc -> out/
-npm run lint         # oxlint src
-npm run format       # oxfmt (write) src
-npm run package      # vsce package -> .vsix
+bun install
+bun run compile      # tsc -> out/
+bun run lint         # oxlint src
+bun run format       # oxfmt (write) src
+bun run package      # vsce package -> .vsix
 ```
 
+> bun is the package manager (lockfile: `bun.lock`). `npm run ...` works too — the scripts are identical.
+
 ## Release notes
+
+### 0.7.0
+
+- **Feat**: empty API key in the Connect wizard now shows a modal with the exact steps to create a RhodeCode auth
+  token (user dropdown → My Account → Auth Tokens → Create), with a Retry button that reopens the prompt.
+- **Chore**: bun is now the package manager (`bun install` → `bun.lock`); scripts and lefthook hooks run through
+  bun/bunx.
+- **Docs**: AGENTS.md documents the lockfile-commit rule and bun toolchain; README Development section updated.
 
 ### 0.6.2
 
