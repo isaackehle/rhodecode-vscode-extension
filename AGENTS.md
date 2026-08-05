@@ -62,8 +62,11 @@ bun run package      # vsce package -> .vsix
 
 ## Conventions
 
-- Settings: `rhodecode.serverurl` / `rhodecode.apikey` (global), `rhodecode.repoid` (workspace). Users normally configure via the Connect wizard, not raw settings.
-- The connect wizard persists serverUrl + apiKey + repoid **atomically at the end** — never write partial config.
+- Settings: `rhodecode.serverurl` / `rhodecode.apikey` (global). Users normally configure via the Connect wizard, not raw
+  settings. **There is no `rhodecode.repoid` setting** — the repo lives in workspace state (`src/repoState.ts`),
+  auto-detected from `git remote.origin.url` matched against `get_repos().clone_uri` on activation, or set by the
+  repository picker.
+- The connect wizard persists serverUrl + apiKey **atomically at the end** and stores the picked `RepoInfo` via `setStoredRepo` — never write partial config.
 - The client is rebuilt after repo selection so `repoId` matches the picked repo.
 - Commands: prefix `rhodecode.`; register in BOTH `package.json` contributions and `src/commands.ts`.
 - No `Co-Authored-By` trailers. Conventional Commits, subject ≤ 72 chars: `feat(comments): ...`, `fix(api): ...`, `chore(toolchain): ...`.

@@ -48,22 +48,6 @@ export async function getApiUrl(): Promise<string | undefined> {
     return serverUrl;
 }
 
-export async function getRepoId(): Promise<string | undefined> {
-    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
-
-    let repoId = configuration.get<string>('repoid');
-    if (!repoId) {
-        repoId = await vscode.window.showInputBox({
-            placeHolder: 'Repository Identifier',
-            prompt: 'Please enter the repository identifier. This will be saved in your workspace configuration',
-        });
-        if (repoId) {
-            await configuration.update('repoid', repoId, vscode.ConfigurationTarget.Workspace);
-        }
-    }
-    return repoId;
-}
-
 export function getMarkHandledPostsComment(): boolean {
     const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
     return configuration.get<boolean>('markHandledPostsComment', false);
@@ -81,10 +65,6 @@ export function getApiKeyRaw(): string | undefined {
     return getApiKeyFromEnv() ?? vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('apikey');
 }
 
-export function getRepoIdRaw(): string | undefined {
-    return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('repoid');
-}
-
 export async function setServerUrl(value: string): Promise<void> {
     await vscode.workspace
         .getConfiguration(CONFIGURATION_SECTION)
@@ -95,13 +75,6 @@ export async function setApiKey(value: string): Promise<void> {
     await vscode.workspace
         .getConfiguration(CONFIGURATION_SECTION)
         .update('apikey', value, vscode.ConfigurationTarget.Global);
-}
-
-/** Save the selected repository identifier to workspace settings. */
-export async function setRepoId(value: string): Promise<void> {
-    await vscode.workspace
-        .getConfiguration(CONFIGURATION_SECTION)
-        .update('repoid', value, vscode.ConfigurationTarget.Workspace);
 }
 
 /**

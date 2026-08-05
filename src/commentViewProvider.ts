@@ -4,6 +4,7 @@ import { PullRequestCommentData, RhodeCodePullRequest } from './model/rhodecode'
 import { parsePullRequestComments } from './commentParser';
 import { PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { getMarkHandledPostsComment } from './configuration';
+import { getRepoIdRaw } from './repoState';
 
 interface DisplayComment {
     id: string;
@@ -307,8 +308,7 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
 }
 
 async function getRepoIdForStore(): Promise<string> {
-    const cfg = vscode.workspace.getConfiguration('rhodecode');
-    return cfg.get<string>('repoid', '');
+    return getRepoIdRaw() ?? '';
 }
 
 function escapeHtml(s: string): string {

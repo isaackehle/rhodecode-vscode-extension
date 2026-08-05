@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { window } from 'vscode';
 import * as config from './configuration';
+import { getRepoIdRaw } from './repoState';
 import {
     CommentResult,
     PullRequestCommentData,
@@ -29,11 +30,24 @@ export class RhodeCodeClient {
     static async create(): Promise<RhodeCodeClient | undefined> {
         const serverUrl = await config.getApiUrl();
         const apiKey = await config.getApiKey();
-        const repoId = await config.getRepoId();
+        const repoId = getRepoIdRaw();
         if (!serverUrl || !apiKey || !repoId) {
             return undefined;
         }
         return new RhodeCodeClient(serverUrl, apiKey, repoId);
+    }
+
+    /**
+     * Client for calls that don't need a repo id (e.g. get_repos during
+     * git-remote auto-detection). Returns undefined if server/key are missing.
+     */
+    static async createForDetection(): Promise<RhodeCodeClient | undefined> {
+        const serverUrl = await config.getApiUrl();
+        const apiKey = await config.getApiKey();
+        if (!serverUrl || !apiKey) {
+            return undefined;
+        }
+        return new RhodeCodeClient(serverUrl, apiKey, '');
     }
 
     private async post<T>(method: string, args: Record<string, unknown>): Promise<RhodeCodeResponse<T>> {

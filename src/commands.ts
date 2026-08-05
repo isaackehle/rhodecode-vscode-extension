@@ -4,7 +4,8 @@ import { RhodeCodePullRequest } from './model/rhodecode';
 import { PullRequestItem, PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { CommentViewProvider } from './commentViewProvider';
 import { setupConnection, browseRepositories } from './serverSetup';
-import { setApiKey, setRepoId, setServerUrl } from './configuration';
+import { setApiKey, setServerUrl } from './configuration';
+import { setStoredRepo } from './repoState';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -25,7 +26,7 @@ export function registerCommands(
                 // leaves partial configuration behind.
                 await setServerUrl(result.serverUrl);
                 await setApiKey(result.apiKey);
-                await setRepoId(result.repo.repo_name);
+                await setStoredRepo(result.repo);
                 setClient(result.client);
                 vscode.window.showInformationMessage(
                     `Connected to ${result.serverUrl} — repository "${result.repo.repo_name}" selected.`,
@@ -47,7 +48,7 @@ export function registerCommands(
                 if (!repo) {
                     return;
                 }
-                await setRepoId(repo.repo_name);
+                await setStoredRepo(repo);
                 // Rebuild the client so it points at the newly chosen repo.
                 setClient(new RhodeCodeClient(client.getServerUrl(), client.getApiKey(), repo.repo_name));
                 await refreshAll();

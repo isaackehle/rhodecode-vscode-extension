@@ -193,12 +193,6 @@
                         "default": "",
                         "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard."
                     },
-                    "rhodecode.repoid": {
-                        "title": "Repo ID",
-                        "type": "string",
-                        "default": "",
-                        "description": "Repository name (full path, e.g. team/services/api) or numeric ID. Set automatically when you pick a repository from the browser (Select Repository… / Connect)."
-                    },
                     "rhodecode.markHandledPostsComment": {
                         "title": "Post a Reply Comment When Marking Handled",
                         "type": "boolean",

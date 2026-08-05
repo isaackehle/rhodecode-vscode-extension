@@ -55,14 +55,17 @@ persisted automatically (`rhodecode.serverurl` / `rhodecode.apikey` globally, `r
 
 ## Configuration
 
-Server URL, API key and repository can all be set through **Connect to RhodeCode…** / **Select Repository…**
-(recommended). They are also available as settings:
+Server URL and API key can be set through **Connect to RhodeCode…** (recommended), or as settings:
 
 | Setting               | Where       | Description                                                                                 |
 | --------------------- | ----------- | ------------------------------------------------------------------------------------------- |
 | `rhodecode.serverurl` | User/global | Your RhodeCode server URL (e.g. `https://rhodecode.example.com`)                            |
 | `rhodecode.apikey`    | User/global | Your RhodeCode API key                                                                      |
-| `rhodecode.repoid`    | Workspace   | The repository to use (full path name or ID) — set automatically when you pick a repository |
+
+The repository is **auto-detected**: on activation the extension reads `git config --get remote.origin.url` and matches
+it against the `clone_uri` of the repos you can access (via `get_repos`), then stores the matching `repo_id` and
+metadata in workspace state. No `repoid` setting exists anymore — pick a different repository with
+**Select Repository…** whenever you need to override the detection.
 
 Optional:
 

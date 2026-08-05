@@ -4,7 +4,10 @@ import { PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { HandledStore } from './handledStore';
 import { CommentViewProvider } from './commentViewProvider';
 import { registerCommands } from './commands';
-import { getRepoIdRaw, getServerUrlRaw } from './configuration';
+import { getServerUrlRaw } from './configuration';
+import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repoState';
+import { getGitRemoteUrl, cloneUrisMatch } from './gitRemote';
+import { RepoInfo } from './model/rhodecode';
 let client: RhodeCodeClient | undefined;
 let tree: PullRequestTreeProvider | undefined;
 let commentView: CommentViewProvider | undefined;
@@ -27,14 +30,40 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
         item.show();
         return;
     }
+    const label = getRepoLabel();
     item.text = '$(repo) RhodeCode: ' + repo;
-    item.tooltip = `Connected to ${server}\nRepository: ${repo}\nClick to switch repository`;
+    item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nClick to switch repository`;
     item.command = 'rhodecode.selectRepository';
     item.show();
 }
 
+/**
+ * Auto-detect the repository for the current workspace (issue #4):
+ * read `git config --get remote.origin.url`, fetch the repos the user can
+ * access, and match on clone_uri. On success, persist the full RepoInfo
+ * (repo_id + metadata) to workspace state.
+ */
+export async function autoDetectRepository(client: RhodeCodeClient): Promise<RepoInfo | undefined> {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+        return undefined;
+    }
+    const remote = await getGitRemoteUrl(folder.uri.fsPath);
+    if (!remote) {
+        return undefined;
+    }
+    const repos = await client.getRepos();
+    const match = repos.find((r) => cloneUrisMatch(r.clone_uri, remote.url));
+    if (match) {
+        await setStoredRepo(match);
+        return match;
+    }
+    return undefined;
+}
+
 export function activate(context: vscode.ExtensionContext): void {
     const store = new HandledStore(context.workspaceState);
+    initRepoState(context.workspaceState);
 
     client = undefined;
     tree = new PullRequestTreeProvider(() => client, store);
@@ -80,6 +109,15 @@ export function activate(context: vscode.ExtensionContext): void {
     void (async () => {
         try {
             client = await RhodeCodeClient.create();
+            // If no repo is selected yet, try git-remote auto-detection.
+            // get_repos needs no repo id, so a fresh client suffices.
+            if (!client && getServerUrlRaw() && !getStoredRepo()) {
+                const detectClient = await RhodeCodeClient.createForDetection();
+                if (detectClient) {
+                    await autoDetectRepository(detectClient);
+                }
+            }
+            client = await RhodeCodeClient.create().catch(() => undefined);
             if (client && tree) {
                 await tree.load();
             }
