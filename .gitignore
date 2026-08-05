@@ -6,3 +6,4 @@ node_modules
 ISSUES.md
 issues.md
 package-lock.json
+.env

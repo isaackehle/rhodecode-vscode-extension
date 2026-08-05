@@ -1,9 +1,16 @@
 import * as vscode from 'vscode';
+import { getApiKeyFromEnv } from './envfile';
 
 const CONFIGURATION_SECTION = 'rhodecode';
 
 export async function getApiKey(): Promise<string | undefined> {
     const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
+
+    // Env-file key wins over the setting (workspace .env, then ~/.env).
+    const envKey = getApiKeyFromEnv();
+    if (envKey) {
+        return envKey;
+    }
 
     let apiKey = configuration.get<string>('apikey');
     if (!apiKey) {
@@ -71,7 +78,7 @@ export function getServerUrlRaw(): string | undefined {
 }
 
 export function getApiKeyRaw(): string | undefined {
-    return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('apikey');
+    return getApiKeyFromEnv() ?? vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('apikey');
 }
 
 export function getRepoIdRaw(): string | undefined {

@@ -70,6 +70,18 @@ Optional:
 | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------- |
 | `rhodecode.markHandledPostsComment` | `false` | Also post a "Marked as handled" reply comment on the PR thread when you mark a comment handled. |
 
+### API key from an environment file
+
+Instead of storing the API key in settings (which risks committing it to a repo's `.vscode/settings`), the extension
+reads `RHODECODE_API_KEY` from a `.env` file with this precedence:
+
+1. `.env` in the workspace/project directory (make sure it is gitignored — the extension repo's `.gitignore` already
+   excludes `.env`)
+2. `~/.env` in your home directory
+
+If neither file has the variable, the extension falls back to the `rhodecode.apikey` setting (or prompts). The Connect
+wizard detects an env-file key and lets you keep it or type a different one.
+
 ## How comments work
 
 - **Listing**: RhodeCode 4.6+ exposes `get_pull_request_comments`, which this extension uses first — it returns structured

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { RhodeCodeClient } from './rhodecoderequest';
 import { RepoGroup, RepoInfo } from './model/rhodecode';
 import { normalizeServerUrl } from './configuration';
+import { getApiKeyFromEnv } from './envfile';
 
 /**
  * Connection wizard:
@@ -162,6 +163,18 @@ export async function promptServerUrl(): Promise<string | undefined> {
 
 export async function promptApiKey(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('rhodecode');
+    const envKey = getApiKeyFromEnv();
+    if (envKey) {
+        const useEnv = await vscode.window.showInformationMessage(
+            'Using RHODECODE_API_KEY from your .env file. Enter a different key to override it (or cancel to keep the env key).',
+            { modal: false },
+            'Enter different key',
+            'Keep env key',
+        );
+        if (useEnv !== 'Enter different key') {
+            return envKey;
+        }
+    }
     const current = config.get<string>('apikey', '');
     const input = await vscode.window.showInputBox({
         prompt: 'RhodeCode API key (found in your user profile on the server)',
