@@ -182,23 +182,25 @@
                 "title": "RhodeCode Configuration",
                 "properties": {
                     "rhodecode.serverurl": {
-                        "title": "Your RhodeCode server URL",
+                        "title": "Server URL",
                         "type": "string",
-                        "default": ""
+                        "default": "",
+                        "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard."
                     },
                     "rhodecode.apikey": {
-                        "title": "Your RhodeCode API key",
+                        "title": "API Key",
                         "type": "string",
-                        "default": ""
+                        "default": "",
+                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard."
                     },
                     "rhodecode.repoid": {
-                        "title": "The repository to use (workspace setting)",
+                        "title": "Repo ID",
                         "type": "string",
                         "default": "",
                         "description": "Repository name (full path, e.g. team/services/api) or numeric ID. Set automatically when you pick a repository from the browser (Select Repository… / Connect)."
                     },
                     "rhodecode.markHandledPostsComment": {
-                        "title": "Post a reply comment on the PR when marking a comment as handled",
+                        "title": "Post a Reply Comment When Marking Handled",
                         "type": "boolean",
                         "default": false,
                         "description": "When false, 'mark as handled' is tracked locally in VS Code only."
