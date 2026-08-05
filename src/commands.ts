@@ -11,7 +11,7 @@ export function registerCommands(
     getClient: () => RhodeCodeClient | undefined,
     tree: PullRequestTreeProvider,
     commentView: CommentViewProvider,
-    setClient: (client: RhodeCodeClient | undefined) => void
+    setClient: (client: RhodeCodeClient | undefined) => void,
 ): void {
     context.subscriptions.push(
         vscode.commands.registerCommand('rhodecode.connect', async () => {
@@ -27,7 +27,7 @@ export function registerCommands(
                 await setRepoId(result.repo.repo_name);
                 setClient(result.client);
                 vscode.window.showInformationMessage(
-                    `Connected to ${result.serverUrl} — repository "${result.repo.repo_name}" selected.`
+                    `Connected to ${result.serverUrl} — repository "${result.repo.repo_name}" selected.`,
                 );
                 await tree.load();
             } catch (err) {
@@ -92,9 +92,9 @@ export function registerCommands(
                         label: `#${pr.pull_request_id} ${pr.title}`,
                         description: `${pr.status} · ${pr.review_status}`,
                         detail: (pr.description || '').slice(0, 200),
-                        pr
+                        pr,
                     })),
-                    { placeHolder: 'Select a pull request' }
+                    { placeHolder: 'Select a pull request' },
                 );
                 if (picked) {
                     await commentView.show(picked.pr);
@@ -109,7 +109,7 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
@@ -125,13 +125,13 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
             const text = await vscode.window.showInputBox({
                 prompt: 'Reply on pull request #' + pr.pull_request_id,
-                placeHolder: 'Your reply'
+                placeHolder: 'Your reply',
             });
             if (!text) {
                 return;
@@ -150,7 +150,7 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
@@ -162,7 +162,7 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
@@ -174,7 +174,7 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
@@ -186,7 +186,7 @@ export function registerCommands(
             if (!client) {
                 return;
             }
-            const pr = item?.pr ?? await pickPullRequest(client);
+            const pr = item?.pr ?? (await pickPullRequest(client));
             if (!pr) {
                 return;
             }
@@ -197,7 +197,7 @@ export function registerCommands(
             if (openTasks > 0) {
                 const proceed = await vscode.window.showQuickPick(['No', 'Yes'], {
                     ignoreFocusOut: true,
-                    placeHolder: `#${pr.pull_request_id} has ${openTasks} open task${openTasks > 1 ? 's' : ''}. Resolve them in the comments view first. Merge anyway?`
+                    placeHolder: `#${pr.pull_request_id} has ${openTasks} open task${openTasks > 1 ? 's' : ''}. Resolve them in the comments view first. Merge anyway?`,
                 });
                 if (proceed !== 'Yes') {
                     return;
@@ -206,7 +206,7 @@ export function registerCommands(
 
             const answer = await vscode.window.showQuickPick(['Yes', 'No'], {
                 ignoreFocusOut: true,
-                placeHolder: `Approve and merge #${pr.pull_request_id}?`
+                placeHolder: `Approve and merge #${pr.pull_request_id}?`,
             });
             if (answer !== 'Yes') {
                 return;
@@ -214,7 +214,7 @@ export function registerCommands(
             await vscode.window.withProgress(
                 {
                     title: 'Merging pull request',
-                    location: vscode.ProgressLocation.Notification
+                    location: vscode.ProgressLocation.Notification,
                 },
                 async (progress) => {
                     try {
@@ -229,7 +229,7 @@ export function registerCommands(
                     } catch (err) {
                         reportError('approve/merge', err);
                     }
-                }
+                },
             );
         }),
 
@@ -241,7 +241,7 @@ export function registerCommands(
             try {
                 const sourceBranch = await vscode.window.showInputBox({
                     placeHolder: 'Source branch name',
-                    prompt: 'Please enter the branch name of the source branch'
+                    prompt: 'Please enter the branch name of the source branch',
                 });
                 if (!sourceBranch) {
                     return;
@@ -249,7 +249,7 @@ export function registerCommands(
                 const targetBranch = await vscode.window.showInputBox({
                     placeHolder: 'Target branch name',
                     prompt: 'Please enter the branch name of the target branch',
-                    value: 'master'
+                    value: 'master',
                 });
                 if (!targetBranch) {
                     return;
@@ -257,7 +257,7 @@ export function registerCommands(
                 const name = await vscode.window.showInputBox({
                     placeHolder: 'Pull request name',
                     prompt: 'Please enter a name for your pull request',
-                    value: `From ${sourceBranch} to ${targetBranch}`
+                    value: `From ${sourceBranch} to ${targetBranch}`,
                 });
                 if (!name) {
                     return;
@@ -268,7 +268,7 @@ export function registerCommands(
             } catch (err) {
                 reportError('create pull request', err);
             }
-        })
+        }),
     );
 }
 
@@ -282,9 +282,9 @@ async function pickPullRequest(client: RhodeCodeClient): Promise<RhodeCodePullRe
         prs.map((pr) => ({
             label: `#${pr.pull_request_id} ${pr.title}`,
             description: `${pr.status} · ${pr.review_status}`,
-            pr
+            pr,
         })),
-        { placeHolder: 'Select a pull request' }
+        { placeHolder: 'Select a pull request' },
     );
     return picked?.pr;
 }

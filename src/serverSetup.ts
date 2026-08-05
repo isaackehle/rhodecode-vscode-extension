@@ -30,7 +30,7 @@ export async function setupConnection(): Promise<
     try {
         const groups = await client.getRepoGroups();
         vscode.window.showInformationMessage(
-            `Connected to ${client.getServerUrl()} (${groups.length} accessible group${groups.length === 1 ? '' : 's'}).`
+            `Connected to ${client.getServerUrl()} (${groups.length} accessible group${groups.length === 1 ? '' : 's'}).`,
         );
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -62,7 +62,9 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
     }
 
     if (repos.length === 0 && groups.length === 0) {
-        vscode.window.showInformationMessage('No repository groups or repositories are accessible to you on this server.');
+        vscode.window.showInformationMessage(
+            'No repository groups or repositories are accessible to you on this server.',
+        );
         return undefined;
     }
 
@@ -94,14 +96,14 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
             items.push({
                 label: `$(folder)  ${g.group_name.split('/').pop()}`,
                 description: 'group',
-                detail: g.group_description || undefined
+                detail: g.group_description || undefined,
             });
         }
         for (const r of localRepos) {
             items.push({
                 label: `$(repo)  ${r.repo_name.split('/').pop()}`,
                 description: r.repo_type,
-                detail: r.description || undefined
+                detail: r.description || undefined,
             });
         }
 
@@ -113,7 +115,7 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
             placeHolder,
             matchOnDescription: true,
             matchOnDetail: true,
-            ignoreFocusOut: true
+            ignoreFocusOut: true,
         });
 
         if (!picked) {
@@ -145,7 +147,7 @@ export async function promptServerUrl(): Promise<string | undefined> {
         prompt: 'RhodeCode server address (e.g. rhodecode.example.com or https://rhodecode.example.com:8443)',
         placeHolder: 'https://rhodecode.example.com',
         value: current,
-        ignoreFocusOut: true
+        ignoreFocusOut: true,
     });
     if (input === undefined) {
         return undefined; // cancelled
@@ -166,7 +168,7 @@ export async function promptApiKey(): Promise<string | undefined> {
         placeHolder: 'pasted-api-key',
         value: current,
         password: true,
-        ignoreFocusOut: true
+        ignoreFocusOut: true,
     });
     if (input === undefined) {
         return undefined;

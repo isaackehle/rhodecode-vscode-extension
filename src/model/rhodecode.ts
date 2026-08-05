@@ -128,4 +128,3 @@ export interface PullRequestCommentData {
     comment_last_version: number;
     pull_request_version: string | null;
 }
-

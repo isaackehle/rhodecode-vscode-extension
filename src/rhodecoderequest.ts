@@ -8,7 +8,7 @@ import {
     RepoInfo,
     RepoRefs,
     RhodeCodePullRequest,
-    RhodeCodeResponse
+    RhodeCodeResponse,
 } from './model/rhodecode';
 
 /**
@@ -43,9 +43,9 @@ export class RhodeCodeClient {
                 id: '1',
                 api_key: this.apiKey,
                 method,
-                args
+                args,
             },
-            { timeout: 30000 }
+            { timeout: 30000 },
         );
 
         if (response.status !== 200) {
@@ -57,7 +57,7 @@ export class RhodeCodeClient {
     async getPullRequests(status: 'new' | 'open' | 'closed' = 'new'): Promise<RhodeCodePullRequest[]> {
         const data = await this.post<RhodeCodePullRequest[]>('get_pull_requests', {
             repoid: this.repoId,
-            status
+            status,
         });
         this.throwIfError(data);
         return data.result ?? [];
@@ -66,12 +66,12 @@ export class RhodeCodeClient {
     async commentOnPullRequest(
         pullRequestId: string | number,
         message: string,
-        status?: 'approved' | 'rejected' | 'under_review' | 'not_reviewed'
+        status?: 'approved' | 'rejected' | 'under_review' | 'not_reviewed',
     ): Promise<CommentResult> {
         const args: Record<string, unknown> = {
             repoid: this.repoId,
             pullrequestid: pullRequestId,
-            message
+            message,
         };
         if (status) {
             args.status = status;
@@ -89,7 +89,7 @@ export class RhodeCodeClient {
     async getPullRequestComments(pullRequestId: string | number): Promise<PullRequestCommentData[]> {
         const data = await this.post<PullRequestCommentData[]>('get_pull_request_comments', {
             pullrequestid: pullRequestId,
-            repoid: this.repoId
+            repoid: this.repoId,
         });
         this.throwIfError(data);
         return data.result ?? [];
@@ -102,13 +102,13 @@ export class RhodeCodeClient {
     async resolveTodoComment(
         pullRequestId: string | number,
         commentId: string | number,
-        message: string
+        message: string,
     ): Promise<CommentResult> {
         const data = await this.post<CommentResult>('comment_pull_request', {
             repoid: this.repoId,
             pullrequestid: pullRequestId,
             message,
-            resolves_comment_id: commentId
+            resolves_comment_id: commentId,
         });
         this.throwIfError(data);
         return data.result!;
@@ -120,7 +120,7 @@ export class RhodeCodeClient {
             repoid: this.repoId,
             pullrequestid: pullRequestId,
             message,
-            comment_type: 'todo'
+            comment_type: 'todo',
         });
         this.throwIfError(data);
         return data.result!;
@@ -133,16 +133,16 @@ export class RhodeCodeClient {
     async mergePullRequest(pullRequestId: string | number): Promise<void> {
         const data = await this.post<{ executed?: boolean; failure_reason?: string; possible?: boolean }>(
             'merge_pull_request',
-            { repoid: this.repoId, pullrequestid: pullRequestId }
+            { repoid: this.repoId, pullrequestid: pullRequestId },
         );
         this.throwIfError(data);
     }
 
     async closePullRequest(pullRequestId: string | number): Promise<void> {
-        const data = await this.post<{ closed?: boolean }>(
-            'close_pull_request',
-            { repoid: this.repoId, pullrequestid: pullRequestId }
-        );
+        const data = await this.post<{ closed?: boolean }>('close_pull_request', {
+            repoid: this.repoId,
+            pullrequestid: pullRequestId,
+        });
         this.throwIfError(data);
     }
 
@@ -152,7 +152,7 @@ export class RhodeCodeClient {
             target_repo: this.repoId,
             source_ref: 'branch:' + sourceRef,
             target_ref: 'branch:' + targetRef,
-            title: name
+            title: name,
         });
         this.throwIfError(data);
     }

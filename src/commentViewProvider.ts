@@ -31,7 +31,7 @@ export class CommentViewProvider {
 
     constructor(
         private readonly getClient: () => RhodeCodeClient | undefined,
-        private readonly tree: PullRequestTreeProvider
+        private readonly tree: PullRequestTreeProvider,
     ) {}
 
     async show(pr: RhodeCodePullRequest): Promise<void> {
@@ -42,7 +42,7 @@ export class CommentViewProvider {
                 CommentViewProvider.viewType,
                 `RhodeCode #${pr.pull_request_id}`,
                 vscode.ViewColumn.One,
-                { enableScripts: true, retainContextWhenHidden: true }
+                { enableScripts: true, retainContextWhenHidden: true },
             );
             this.panel.onDidDispose(() => {
                 this.panel = undefined;
@@ -58,11 +58,7 @@ export class CommentViewProvider {
         await this.render();
     }
 
-    private async handleMessage(message: {
-        type: string;
-        commentId?: string;
-        text?: string;
-    }): Promise<void> {
+    private async handleMessage(message: { type: string; commentId?: string; text?: string }): Promise<void> {
         if (!this.pr) {
             return;
         }
@@ -126,7 +122,7 @@ export class CommentViewProvider {
         try {
             const apiComments = await client.getPullRequestComments(this.pr!.pull_request_id);
             return apiComments.map((c) => toDisplayComment(c));
-        } catch (err) {
+        } catch {
             // Older servers lack get_pull_request_comments — fall back to HTML.
             const html = await this.tree.getCommentsHtml(this.pr!);
             const parsed = parsePullRequestComments(html);
@@ -138,7 +134,7 @@ export class CommentViewProvider {
                 isTodo: c.commentType === 'todo',
                 resolved: c.resolved,
                 statusLabel: c.statusChange,
-                location: null
+                location: null,
             }));
         }
     }
@@ -156,7 +152,7 @@ export class CommentViewProvider {
         let fallback = false;
         try {
             comments = await this.loadComments(client);
-        } catch (err) {
+        } catch {
             fallback = true;
             comments = [];
         }
@@ -171,13 +167,9 @@ export class CommentViewProvider {
         }
         const summary = summaryParts.join(' · ') || 'No comments';
 
-        const rows = comments
-            .map((comment) => this.renderCommentRow(comment, repoId))
-            .join('\n');
+        const rows = comments.map((comment) => this.renderCommentRow(comment, repoId)).join('\n');
 
-        const empty = comments.length === 0
-            ? '<p class="empty">No comments on this pull request yet.</p>'
-            : '';
+        const empty = comments.length === 0 ? '<p class="empty">No comments on this pull request yet.</p>' : '';
 
         this.panel.webview.html = `<!DOCTYPE html>
 <html>
@@ -261,12 +253,8 @@ ${rows}
                 : '<span class="badge todo">TASK</span>'
             : '';
         const handledBadge = handled ? '<span class="badge handled">handled</span>' : '';
-        const statusBadge = comment.statusLabel
-            ? `<span class="badge">${escapeHtml(comment.statusLabel)}</span>`
-            : '';
-        const location = comment.location
-            ? `<div class="location">${escapeHtml(comment.location)}</div>`
-            : '';
+        const statusBadge = comment.statusLabel ? `<span class="badge">${escapeHtml(comment.statusLabel)}</span>` : '';
+        const location = comment.location ? `<div class="location">${escapeHtml(comment.location)}</div>` : '';
 
         let actions = '';
         if (comment.isTodo && !comment.resolved) {
@@ -303,12 +291,8 @@ ${rows}
 function toDisplayComment(c: PullRequestCommentData): DisplayComment {
     const isTodo = c.comment_type === 'todo';
     const resolved = Boolean(c.comment_resolved_by);
-    const statusLabel = c.comment_status && 'status_lbl' in c.comment_status
-        ? c.comment_status.status_lbl
-        : null;
-    const location = c.comment_f_path
-        ? `${c.comment_f_path}${c.comment_lineno ? ':' + c.comment_lineno : ''}`
-        : null;
+    const statusLabel = c.comment_status && 'status_lbl' in c.comment_status ? c.comment_status.status_lbl : null;
+    const location = c.comment_f_path ? `${c.comment_f_path}${c.comment_lineno ? ':' + c.comment_lineno : ''}` : null;
 
     return {
         id: String(c.comment_id),
@@ -318,7 +302,7 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
         isTodo,
         resolved,
         statusLabel,
-        location
+        location,
     };
 }
 
@@ -328,9 +312,5 @@ async function getRepoIdForStore(): Promise<string> {
 }
 
 function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

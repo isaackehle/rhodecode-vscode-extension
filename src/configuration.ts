@@ -9,7 +9,7 @@ export async function getApiKey(): Promise<string | undefined> {
     if (!apiKey) {
         apiKey = await vscode.window.showInputBox({
             placeHolder: 'API Key',
-            prompt: 'Please enter your RhodeCode API key'
+            prompt: 'Please enter your RhodeCode API key',
         });
         if (apiKey) {
             await configuration.update('apikey', apiKey, vscode.ConfigurationTarget.Global);
@@ -25,7 +25,7 @@ export async function getApiUrl(): Promise<string | undefined> {
     if (!serverUrl) {
         serverUrl = await vscode.window.showInputBox({
             placeHolder: 'Server URL',
-            prompt: 'Please enter your RhodeCode server URL'
+            prompt: 'Please enter your RhodeCode server URL',
         });
         if (serverUrl) {
             await configuration.update('serverurl', serverUrl, vscode.ConfigurationTarget.Global);
@@ -48,7 +48,7 @@ export async function getRepoId(): Promise<string | undefined> {
     if (!repoId) {
         repoId = await vscode.window.showInputBox({
             placeHolder: 'Repository Identifier',
-            prompt: 'Please enter the repository identifier. This will be saved in your workspace configuration'
+            prompt: 'Please enter the repository identifier. This will be saved in your workspace configuration',
         });
         if (repoId) {
             await configuration.update('repoid', repoId, vscode.ConfigurationTarget.Workspace);

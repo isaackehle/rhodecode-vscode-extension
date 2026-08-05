@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const treeView = vscode.window.createTreeView('rhodecode.pullRequests', {
         treeDataProvider: tree,
-        showCollapseAll: false
+        showCollapseAll: false,
     });
     context.subscriptions.push(treeView);
 
@@ -39,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     reportError('reload', err);
                 }
             }
-        })
+        }),
     );
 
     // Kick off an initial load so the view is populated when configured.

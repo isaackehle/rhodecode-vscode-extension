@@ -31,7 +31,7 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
             statusChange: extractStatusChange(block),
             text: extractText(block),
             commentType: extractCommentType(openTag, block),
-            resolved: extractResolved(block)
+            resolved: extractResolved(block),
         });
     }
 
@@ -47,7 +47,7 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
                 statusChange: extractStatusChange(block),
                 text: extractText(block),
                 commentType: extractCommentType(match[0], block),
-                resolved: extractResolved(block)
+                resolved: extractResolved(block),
             });
         }
     }

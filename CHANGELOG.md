@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.5.0 - 2026-08-05
+
+- Toolchain: migrated from eslint to oxlint + oxfmt (configs `.oxlintrc.json`, `.oxfmtrc.json`).
+- README: acknowledgments section crediting dimsedane's original vscode-rhodecode.
+- Added `lint` / `format` / `format:check` scripts.
+
 ## 0.4.0 - 2026-08-05
 
 - Connection wizard (Connect to RhodeCode…): format-validated server address, API key, live connection check, then a group/repo browser with type-to-filter and drill-down; repo saved to workspace settings.

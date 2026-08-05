@@ -2,7 +2,9 @@
 
 Work with [RhodeCode](https://rhodecode.com/) pull requests from Visual Studio Code: view the comment thread, reply to comments, and mark comments as handled — plus the original helper commands (create PR, approve & merge).
 
-Forked from [dimsedane/vscode-rhodecode](https://github.com/dimsedane/vscode-rhodecode) (MIT).
+## Acknowledgments
+
+This extension began as a fork of [dimsedane/vscode-rhodecode](https://github.com/dimsedane/vscode-rhodecode) (MIT). Thank you to **dimsedane** for the original helper commands (create pull request, show pull requests, approve & merge) that this project builds on — the connection wizard, repository browser, branch view, and comment/task features were all added on top of that foundation.
 
 ## Features
 
@@ -50,10 +52,18 @@ Optional:
 ```shell
 npm install
 npm run compile      # tsc -> out/
+npm run lint         # oxlint src
+npm run format       # oxfmt (write) src
 npm run package      # vsce package -> .vsix
 ```
 
 ## Release notes
+
+### 0.5.0
+
+- Toolchain: migrated from eslint to oxlint + oxfmt (configs `.oxlintrc.json`, `.oxfmtrc.json`).
+- README: acknowledgments section crediting dimsedane's original vscode-rhodecode.
+- Added `lint` / `format` / `format:check` scripts.
 
 ### 0.4.0
 

@@ -15,7 +15,7 @@ export class PullRequestItem extends vscode.TreeItem {
         this.command = {
             command: 'rhodecode.showComments',
             title: 'Show Comments',
-            arguments: [this]
+            arguments: [this],
         };
     }
 }
@@ -25,7 +25,7 @@ export class SectionItem extends vscode.TreeItem {
     constructor(
         public readonly sectionId: string,
         label: string,
-        icon: string
+        icon: string,
     ) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed);
         this.id = `section-${sectionId}`;
@@ -39,7 +39,7 @@ export class RefItem extends vscode.TreeItem {
     constructor(
         public readonly kind: 'branch' | 'tag' | 'closed',
         public readonly name: string,
-        public readonly sha: string
+        public readonly sha: string,
     ) {
         super(name, vscode.TreeItemCollapsibleState.None);
         this.id = `${kind}-${name}`;
@@ -50,7 +50,7 @@ export class RefItem extends vscode.TreeItem {
         this.command = {
             command: 'rhodecode.openChangeset',
             title: 'Open in Browser',
-            arguments: [sha]
+            arguments: [sha],
         };
     }
 }
@@ -64,7 +64,7 @@ export class SetupItem extends vscode.TreeItem {
         this.iconPath = new vscode.ThemeIcon('plug');
         this.command = {
             command: 'rhodecode.connect',
-            title: 'Connect to RhodeCode'
+            title: 'Connect to RhodeCode',
         };
     }
 }
@@ -92,7 +92,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     constructor(
         private readonly getClient: () => RhodeCodeClient | undefined,
-        public readonly store: HandledStore
+        public readonly store: HandledStore,
     ) {}
 
     refresh(): void {
@@ -129,7 +129,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             return [
                 new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
                 new SectionItem('branches', 'Branches', 'git-branch'),
-                new SectionItem('tags', 'Tags', 'tag')
+                new SectionItem('tags', 'Tags', 'tag'),
             ];
         }
 
