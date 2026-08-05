@@ -2,7 +2,7 @@
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",
@@ -207,7 +207,7 @@
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "test": "bun run scripts/test-envfile.ts",
+        "test": "bun run scripts/test-envfile.ts && node scripts/test-extension-load.cjs",
         "package": "vsce package --no-dependencies",
         "lint": "oxlint src",
         "lint:md": "rumdl check .",
@@ -222,8 +222,5 @@
         "oxfmt": "^0.62.0",
         "oxlint": "^1.77.0",
         "typescript": "^5.4.0"
-    },
-    "dependencies": {
-        "axios": "^1.7.0"
     }
 }

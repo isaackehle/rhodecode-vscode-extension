@@ -113,6 +113,15 @@ bun run package      # vsce package -> .vsix
 
 ## Release notes
 
+### 0.8.1
+
+- **Fix**: all commands reported "command not found" on fresh installs. The packaged extension never shipped its
+  runtime dependency (`axios` was excluded by `node_modules/**` in `.vscodeignore` + `--no-dependencies`), so
+  activation threw `Cannot find module 'axios'` and no commands registered. Replaced axios with the built-in `fetch`
+  (Node 18+, VS Code 1.80) — the extension now has zero runtime dependencies and the `.vsix` is self-contained.
+- **Test**: `bun run test` now also loads every compiled module through a `vscode` stub (13 module-load cases) to
+  guard against missing-module regressions.
+
 ### 0.8.0
 
 - **Feat**: the repository is now auto-detected — the `rhodecode.repoid` setting is gone. On activation the extension

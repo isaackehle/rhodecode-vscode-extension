@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.8.1 - 2026-08-05
+
+- Fix: all commands reported "command not found" on fresh installs. The packaged extension never shipped its runtime
+  dependency (`axios` was excluded by `node_modules/**` in `.vscodeignore` + `--no-dependencies`), so activation threw
+  `Cannot find module 'axios'` and no commands registered. Replaced axios with the built-in `fetch` (Node 18+ in
+  VS Code 1.80); the extension now has zero runtime dependencies and the `.vsix` is self-contained (#5).
+- Test: added `scripts/test-extension-load.cjs` — loads every compiled module through a `vscode` stub exactly like the
+  extension host, guarding against missing-module regressions. `bun run test` now runs 15 env/remote cases + 13
+  module-load cases.
+
 ## 0.8.0 - 2026-08-05
 
 - Feat: repository is now auto-detected. The `rhodecode.repoid` setting is gone — on activation the extension reads

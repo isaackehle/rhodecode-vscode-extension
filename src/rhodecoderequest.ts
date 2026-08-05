@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { window } from 'vscode';
 import * as config from './configuration';
 import { getRepoIdRaw } from './repoState';
@@ -51,21 +50,31 @@ export class RhodeCodeClient {
     }
 
     private async post<T>(method: string, args: Record<string, unknown>): Promise<RhodeCodeResponse<T>> {
-        const response = await axios.post<RhodeCodeResponse<T>>(
-            `${this.serverUrl}/_admin/api`,
-            {
-                id: '1',
-                api_key: this.apiKey,
-                method,
-                args,
-            },
-            { timeout: 30000 },
-        );
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        let response: Response;
+        try {
+            response = await fetch(`${this.serverUrl}/_admin/api`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: '1',
+                    api_key: this.apiKey,
+                    method,
+                    args,
+                }),
+                signal: controller.signal,
+            });
+        } catch (err) {
+            throw new Error(`RhodeCode API request failed: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            clearTimeout(timer);
+        }
 
         if (response.status !== 200) {
             throw new Error(`RhodeCode API returned HTTP ${response.status}`);
         }
-        return response.data;
+        return (await response.json()) as RhodeCodeResponse<T>;
     }
 
     async getPullRequests(status: 'new' | 'open' | 'closed' = 'new'): Promise<RhodeCodePullRequest[]> {
@@ -205,8 +214,20 @@ export class RhodeCodeClient {
      */
     async getPullRequestPage(pullRequestId: string | number): Promise<string> {
         const url = `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}?api_key=${encodeURIComponent(this.apiKey)}`;
-        const response = await axios.get<string>(url, { timeout: 30000 });
-        return response.data;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        let response: Response;
+        try {
+            response = await fetch(url, { signal: controller.signal });
+        } catch (err) {
+            throw new Error(`Could not fetch pull request page: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            clearTimeout(timer);
+        }
+        if (response.status !== 200) {
+            throw new Error(`Pull request page returned HTTP ${response.status}`);
+        }
+        return await response.text();
     }
 
     pullRequestUrl(pullRequestId: string | number): string {
