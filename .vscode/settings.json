@@ -20,6 +20,7 @@
         "rhodecode",
         "rumdl",
         "serverurl",
-        "unconfigured"
+        "unconfigured",
+        "vscodeignore"
     ]
 }
