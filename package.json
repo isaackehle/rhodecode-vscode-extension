@@ -191,7 +191,13 @@
                         "title": "API Key",
                         "type": "string",
                         "default": "",
-                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard."
+                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard. Ignored when 'API Key From Environment File' is enabled."
+                    },
+                    "rhodecode.apikeyFromEnv": {
+                        "title": "API Key From Environment File",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Read RHODECODE_API_KEY from a .env file (workspace .env first, then ~/.env) instead of the rhodecode.apikey setting. When enabled, rhodecode.apikey is ignored so the key can stay out of a repo's .vscode/settings."
                     },
                     "rhodecode.markHandledPostsComment": {
                         "title": "Post a Reply Comment When Marking Handled",
@@ -205,6 +211,7 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
+        "prepackage": "bun run test",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "test": "bun run scripts/test-envfile.ts && node scripts/test-extension-load.cjs",

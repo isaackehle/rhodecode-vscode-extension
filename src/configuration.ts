@@ -3,13 +3,26 @@ import { getApiKeyFromEnv } from './envfile';
 
 const CONFIGURATION_SECTION = 'rhodecode';
 
+/** Whether the API key should be read from a .env file (rhodecode.apikeyFromEnv). */
+export function isApiKeyFromEnvEnabled(): boolean {
+    return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<boolean>('apikeyFromEnv', false);
+}
+
 export async function getApiKey(): Promise<string | undefined> {
     const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
 
-    // Env-file key wins over the setting (workspace .env, then ~/.env).
-    const envKey = getApiKeyFromEnv();
-    if (envKey) {
-        return envKey;
+    // Env-file mode is opt-in: when enabled, RHODECODE_API_KEY comes from
+    // .env (workspace, then ~/.env) and the rhodecode.apikey setting is ignored.
+    if (isApiKeyFromEnvEnabled()) {
+        const envKey = getApiKeyFromEnv();
+        if (envKey) {
+            return envKey;
+        }
+        vscode.window.showErrorMessage(
+            'RhodeCode: rhodecode.apikeyFromEnv is enabled, but RHODECODE_API_KEY was not found in a .env file ' +
+                '(checked workspace .env, then ~/.env).',
+        );
+        return undefined;
     }
 
     let apiKey = configuration.get<string>('apikey');
@@ -62,7 +75,10 @@ export function getServerUrlRaw(): string | undefined {
 }
 
 export function getApiKeyRaw(): string | undefined {
-    return getApiKeyFromEnv() ?? vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('apikey');
+    if (isApiKeyFromEnvEnabled()) {
+        return getApiKeyFromEnv();
+    }
+    return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<string>('apikey');
 }
 
 export async function setServerUrl(value: string): Promise<void> {

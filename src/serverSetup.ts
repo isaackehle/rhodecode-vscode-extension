@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { RhodeCodeClient } from './rhodecoderequest';
 import { RepoGroup, RepoInfo } from './model/rhodecode';
-import { normalizeServerUrl } from './configuration';
+import { normalizeServerUrl, isApiKeyFromEnvEnabled } from './configuration';
 import { getApiKeyFromEnv } from './envfile';
 
 /**
@@ -163,19 +163,29 @@ export async function promptServerUrl(): Promise<string | undefined> {
 
 export async function promptApiKey(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('rhodecode');
-    const envKey = getApiKeyFromEnv();
+    const useEnv = isApiKeyFromEnvEnabled();
+    const envKey = useEnv ? getApiKeyFromEnv() : undefined;
     if (envKey) {
-        const useEnv = await vscode.window.showInformationMessage(
+        const useEnvKey = await vscode.window.showInformationMessage(
             'Using RHODECODE_API_KEY from your .env file. Enter a different key to override it (or cancel to keep the env key).',
             { modal: false },
             'Enter different key',
             'Keep env key',
         );
-        if (useEnv !== 'Enter different key') {
+        if (useEnvKey !== 'Enter different key') {
             return envKey;
         }
+    } else if (useEnv) {
+        await vscode.window.showErrorMessage(
+            'RhodeCode: rhodecode.apikeyFromEnv is enabled, but RHODECODE_API_KEY was not found in a .env file ' +
+                '(checked workspace .env, then ~/.env). Add it there, or disable the setting and enter the key here.',
+            { modal: true },
+        );
+        return undefined;
     }
-    const current = config.get<string>('apikey', '');
+    // When env-file mode is on, the rhodecode.apikey setting is disabled, so a
+    // typed key is only used for this session (the wizard does not persist it).
+    const current = useEnv ? '' : config.get<string>('apikey', '');
     const input = await vscode.window.showInputBox({
         prompt: 'RhodeCode API key (found in your user profile on the server)',
         placeHolder: 'pasted-api-key',

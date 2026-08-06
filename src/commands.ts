@@ -4,7 +4,7 @@ import { RhodeCodePullRequest } from './model/rhodecode';
 import { PullRequestItem, PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { CommentViewProvider } from './commentViewProvider';
 import { setupConnection, browseRepositories } from './serverSetup';
-import { setApiKey, setServerUrl } from './configuration';
+import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
 import { setStoredRepo } from './repoState';
 
 export function registerCommands(
@@ -23,9 +23,12 @@ export function registerCommands(
                     return;
                 }
                 // Persist all settings at once so a cancelled wizard never
-                // leaves partial configuration behind.
+                // leaves partial configuration behind. With apikeyFromEnv the
+                // apikey setting is disabled, so the key stays out of settings.
                 await setServerUrl(result.serverUrl);
-                await setApiKey(result.apiKey);
+                if (!isApiKeyFromEnvEnabled()) {
+                    await setApiKey(result.apiKey);
+                }
                 await setStoredRepo(result.repo);
                 setClient(result.client);
                 vscode.window.showInformationMessage(

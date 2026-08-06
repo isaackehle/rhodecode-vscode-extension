@@ -60,7 +60,7 @@ Server URL and API key can be set through **Connect to RhodeCode…** (recommend
 | Setting               | Where       | Description                                                                                 |
 | --------------------- | ----------- | ------------------------------------------------------------------------------------------- |
 | `rhodecode.serverurl` | User/global | Your RhodeCode server URL (e.g. `https://rhodecode.example.com`)                            |
-| `rhodecode.apikey`    | User/global | Your RhodeCode API key                                                                      |
+| `rhodecode.apikey`    | User/global | Your RhodeCode API key (ignored while `rhodecode.apikeyFromEnv` is enabled)                 |
 
 The repository is **auto-detected**: on activation the extension reads `git config --get remote.origin.url` and matches
 it against the `clone_uri` of the repos you can access (via `get_repos`), then stores the matching `repo_id` and
@@ -72,18 +72,24 @@ Optional:
 | Setting                             | Default | Description                                                                                     |
 | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------- |
 | `rhodecode.markHandledPostsComment` | `false` | Also post a "Marked as handled" reply comment on the PR thread when you mark a comment handled. |
+| `rhodecode.apikeyFromEnv`           | `false` | Read the API key from a `.env` file instead of the `rhodecode.apikey` setting.                  |
 
 ### API key from an environment file
 
-Instead of storing the API key in settings (which risks committing it to a repo's `.vscode/settings`), the extension
-reads `RHODECODE_API_KEY` from a `.env` file with this precedence:
+Storing the API key in the `rhodecode.apikey` setting risks committing it to a repo's `.vscode/settings`. To avoid
+that, enable the `rhodecode.apikeyFromEnv` setting: the extension then reads `RHODECODE_API_KEY` from a `.env` file
+(workspace/project directory first, `~/.env` second) and ignores the `rhodecode.apikey` setting entirely.
 
-1. `.env` in the workspace/project directory (make sure it is gitignored — the extension repo's `.gitignore` already
-   excludes `.env`)
-2. `~/.env` in your home directory
+```shell
+# .env in your project root (make sure it is gitignored)
+RHODECODE_API_KEY=your-api-key
+```
 
-If neither file has the variable, the extension falls back to the `rhodecode.apikey` setting (or prompts). The Connect
-wizard detects an env-file key and lets you keep it or type a different one.
+- When enabled and no env-file key is found, the extension shows an error telling you exactly what to add — it does
+  not fall back to the setting or prompt.
+- The Connect wizard detects an env-file key and lets you keep it or type a different one; a typed key is used for the
+  session only and is not written to settings.
+- `~/.env` is never part of a repo, and the project `.gitignore` in this repo already excludes `.env`.
 
 ## How comments work
 
