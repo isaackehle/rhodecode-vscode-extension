@@ -41,9 +41,15 @@ export function registerCommands(
         }),
 
         vscode.commands.registerCommand('rhodecode.selectRepository', async () => {
-            const client = getClient();
-            if (!client) {
+            const initialClient = getClient();
+            if (!initialClient) {
                 await vscode.commands.executeCommand('rhodecode.connect');
+            }
+            // rhodecode.connect reports its own errors and calls setClient() on
+            // success; re-check so a successful connect flows straight into repo
+            // selection instead of forcing the user to invoke this command twice.
+            const client = initialClient ?? getClient();
+            if (!client) {
                 return;
             }
             try {
