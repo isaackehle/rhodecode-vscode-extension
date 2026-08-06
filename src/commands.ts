@@ -16,9 +16,9 @@ export function registerCommands(
     refreshAll: () => Promise<void>,
 ): void {
     context.subscriptions.push(
-        vscode.commands.registerCommand('rhodecode.connect', async () => {
+        vscode.commands.registerCommand('rhodecode.connect', async (prefillServer?: string) => {
             try {
-                const result = await setupConnection();
+                const result = await setupConnection(prefillServer);
                 if (!result) {
                     return;
                 }

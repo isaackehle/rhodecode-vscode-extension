@@ -77,3 +77,39 @@ export function cloneUrisMatch(cloneUri: string | null | undefined, gitRemoteUrl
     const b = normalizeRepoPath(gitRemoteUrl);
     return !!a && !!b && a.toLowerCase() === b.toLowerCase();
 }
+
+/**
+ * Check if a git remote URL appears to be a RhodeCode repository.
+ * Detects by looking for 'rhodecode' in the URL path.
+ * Handles https, ssh://, and scp-like (git@host:...) forms.
+ */
+export function isRhodeCodeRemote(url: string): boolean {
+    // Check for 'rhodecode' anywhere in the URL (host or path)
+    // We want to match: host/rhodecode/repo, host:rhodecode/repo, etc.
+    // But not: github.com/rhodecode-user/repo (where rhodecode is just a username)
+    // Strategy: look for /rhodecode/ or :rhodecode/ pattern
+    return /\/rhodecode\/|:rhodecode\//i.test(url);
+}
+
+/**
+ * Extract the server host from a git remote URL.
+ * Returns the host without protocol or user prefix.
+ * Used to pre-fill server URL in the connect wizard.
+ */
+export function extractServerHost(url: string): string | undefined {
+    let s = url.trim();
+    if (!s) {
+        return undefined;
+    }
+    // scheme://[user@]host/...
+    const scheme = s.match(/^[a-z][a-z0-9+.-]*:\/\/(?:[^@/]+@)?([^/]+)/i);
+    if (scheme) {
+        return scheme[1];
+    }
+    // scp-like: [user@]host:owner/repo.git
+    const scp = s.match(/^(?:[^@/]+@)?([^:/]+):/);
+    if (scp) {
+        return scp[1];
+    }
+    return undefined;
+}

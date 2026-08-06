@@ -12,11 +12,13 @@ import { getApiKeyFromEnv } from './envfile';
  *      entered values, so re-running the wizard picks up changes)
  *   4. browse groups/repos (type to filter) and pick one
  * Caller persists the values and refreshes the tree.
+ *
+ * @param prefillServer Optional pre-filled server URL (e.g., from git remote detection).
  */
-export async function setupConnection(): Promise<
-    { client: RhodeCodeClient; repo: RepoInfo; serverUrl: string; apiKey: string } | undefined
-> {
-    const serverUrl = await promptServerUrl();
+export async function setupConnection(
+    prefillServer?: string,
+): Promise<{ client: RhodeCodeClient; repo: RepoInfo; serverUrl: string; apiKey: string } | undefined> {
+    const serverUrl = await promptServerUrl(prefillServer);
     if (serverUrl === undefined) {
         return undefined;
     }
@@ -133,7 +135,7 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
             continue;
         }
         // Repository selected
-        const name = picked.label.replace(/^\$\(repo\)\s+/, '');
+        const name = picked.label.replace(/^\$\$\(repo\)\s+/, '');
         chosen = repos.find((r) => r.repo_name.split('/').pop() === name && r.repo_name.startsWith(prefix))!;
         done = true;
     }
@@ -141,9 +143,9 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
     return chosen;
 }
 
-export async function promptServerUrl(): Promise<string | undefined> {
+export async function promptServerUrl(prefill?: string): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('rhodecode');
-    const current = config.get<string>('serverurl', '');
+    const current = prefill ?? config.get<string>('serverurl', '');
     const input = await vscode.window.showInputBox({
         prompt: 'RhodeCode server address (e.g. rhodecode.example.com or https://rhodecode.example.com:8443)',
         placeHolder: 'https://rhodecode.example.com',

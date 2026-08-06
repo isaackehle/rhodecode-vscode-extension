@@ -6,7 +6,7 @@ import { CommentViewProvider } from './commentViewProvider';
 import { registerCommands } from './commands';
 import { getServerUrlRaw } from './configuration';
 import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repoState';
-import { getGitRemoteUrl, cloneUrisMatch } from './gitRemote';
+import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './gitRemote';
 import { RepoInfo } from './model/rhodecode';
 let client: RhodeCodeClient | undefined;
 let tree: PullRequestTreeProvider | undefined;
@@ -35,6 +35,44 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
     item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nClick to switch repository`;
     item.command = 'rhodecode.selectRepository';
     item.show();
+}
+
+/**
+ * Check if the current workspace is a RhodeCode repository and trigger
+ * the connect wizard if not already connected.
+ */
+async function checkAndPromptForRhodeCode(): Promise<void> {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+        return;
+    }
+
+    const remote = await getGitRemoteUrl(folder.uri.fsPath);
+    if (!remote || !isRhodeCodeRemote(remote.url)) {
+        return;
+    }
+
+    // Already connected? Skip prompt.
+    if (getServerUrlRaw()) {
+        return;
+    }
+
+    // Prompt user to connect
+    const choice = await vscode.window.showInformationMessage(
+        'Detected a RhodeCode repository. Connect now?',
+        'Connect',
+        'Later',
+    );
+
+    if (choice === 'Connect') {
+        // Pre-fill the server URL from the detected remote
+        const host = extractServerHost(remote.url);
+        if (host) {
+            await vscode.commands.executeCommand('rhodecode.connect', host);
+        } else {
+            await vscode.commands.executeCommand('rhodecode.connect');
+        }
+    }
 }
 
 /**
@@ -105,9 +143,19 @@ export function activate(context: vscode.ExtensionContext): void {
         }),
     );
 
+    // Listen for workspace folder changes to detect RhodeCode repos
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+            await checkAndPromptForRhodeCode();
+        }),
+    );
+
     // Kick off an initial load so the view is populated when configured.
     void (async () => {
         try {
+            // Check for RhodeCode repo on initial activation
+            await checkAndPromptForRhodeCode();
+
             client = await RhodeCodeClient.create();
             // If no repo is selected yet, try git-remote auto-detection.
             // get_repos needs no repo id, so a fresh client suffices.
