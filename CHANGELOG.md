@@ -1,5 +1,17 @@
 # Change Log
 
+## 0.8.4 - 2026-08-06
+
+- Feat: Auto-detect RhodeCode workspaces. When opening a workspace, the extension now checks if the git remote is a
+  RhodeCode repository (`/rhodecode/` or `:rhodecode/` pattern). If not connected, shows a notification:
+  "Detected a RhodeCode repository. Connect now?" Clicking "Connect" pre-fills the server URL in the wizard.
+- Test: Added `isRhodeCodeRemote()` and `extractServerHost()` helpers in `src/gitRemote.ts` with 26 unit tests covering
+  https, ssh://, and scp-like URL formats.
+- Test: Added generic test runner `scripts/run-tests.cjs` that auto-discovers all `test-*.cjs` and `test-*.ts` files in
+  `scripts/`. No need to update `package.json` when adding new tests.
+- Chore: Updated `@vscode/vsce` from 2.32.0 to 3.9.2 (latest) to eliminate deprecation warnings.
+- Docs: Added `docs/auto-detect-workspace.md` design document describing the auto-detection workflow and integration test plan.
+
 ## 0.8.3 - 2026-08-06
 
 - Test: add manifest consistency check (`activationEvents` vs `contributes.commands` vs
