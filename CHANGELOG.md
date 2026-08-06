@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.8.2 - 2026-08-06
+
+- Feat: Add `rhodecode.apikeyFromEnv` setting.
+  Reads `RHODECODE_API_KEY` from `.env` file (workspace first, then `~/.env`).
+  Ignores `rhodecode.apikey` setting to prevent accidental commitment of API keys to repo `.vscode/settings`.
+- Feat: When `apikeyFromEnv` is enabled and no env-file key is found, show a clear error message instead of falling back to the setting or prompting.
+- Feat: Connect wizard detects env-file keys and allows keeping or overriding them for the session only (typed keys are not persisted to settings).
+- Chore: Add `prepackage` script that runs tests before packaging to ensure releases only pass when all tests succeed.
+
 ## 0.8.1 - 2026-08-05
 
 - Fix: all commands reported "command not found" on fresh installs. The packaged extension never shipped its runtime
