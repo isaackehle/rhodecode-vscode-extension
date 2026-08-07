@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.10.0 - 2026-08-07
+
+- **Feat**: Push tips notification (#6). After pushing a branch, the extension shows a notification offering to open
+  the existing pull request or create a new one. Skips default branches (master/main/trunk). Configurable via
+  `rhodecode.pushTips` setting (defaults to `true`). Includes push detection logic with unit tests.
+
 ## v0.9.5 - 2026-08-07
 
 - **Fix**: Implement `rhodecode.markHandledPostsComment` setting. When enabled,
