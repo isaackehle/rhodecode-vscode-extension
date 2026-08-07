@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.8.7 - 2026-08-07
+
+- Chore: add `bun run clean` script to remove build/test artifacts (`out/`, `.vscode-test/`, `.rumdl_cache/`,
+  `*.vsix`). Uses `find -delete` instead of a `*.vsix` glob so it doesn't fail under shells (e.g. zsh) that error
+  on an unmatched glob.
+
 ## 0.8.6 - 2026-08-07
 
 - Test: fixed `scripts/test-configuration.cjs` — the `getApiKeyRaw returns undefined (no env file)` case read the
