@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.10.1 - 2026-08-07
+
+- **Lint**: Remove redundant `activationEvents` from `package.json` (#14). VS Code 1.74+ auto-generates
+  activation events from contribution declarations, making the explicit array optional.
+
 ## v0.10.0 - 2026-08-07
 
 - **Feat**: Push tips notification (#6). After pushing a branch, the extension shows a notification offering to open

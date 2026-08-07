@@ -252,5 +252,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.10.0"
+    "version": "0.10.1"
 }
