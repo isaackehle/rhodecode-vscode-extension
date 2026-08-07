@@ -7,7 +7,52 @@ import { registerCommands } from './commands';
 import { getServerUrlRaw } from './configuration';
 import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repoState';
 import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './gitRemote';
+import { watchForPushes } from './pushWatcher';
 import { RepoInfo } from './model/rhodecode';
+
+/** Branches that never get their own pull request, so the push tip is skipped for them. */
+const DEFAULT_BRANCH_NAMES = new Set(['master', 'main', 'trunk']);
+
+/**
+ * After a branch is pushed (issue #6): if it already has an open pull
+ * request, offer to open it; otherwise offer to create one. Skipped when
+ * `rhodecode.pushTips` is disabled, the branch is a default branch, or
+ * there's no active client (not connected / no repo selected).
+ */
+async function handleBranchPushed(branch: string): Promise<void> {
+    if (!vscode.workspace.getConfiguration('rhodecode').get<boolean>('pushTips', true)) {
+        return;
+    }
+    if (DEFAULT_BRANCH_NAMES.has(branch.toLowerCase())) {
+        return;
+    }
+    if (!client) {
+        return;
+    }
+    try {
+        const openPullRequests = await client.getPullRequests();
+        const existing = openPullRequests.find((pr) => pr.source.reference.name === branch);
+        if (existing) {
+            const choice = await vscode.window.showInformationMessage(
+                `RhodeCode: Branch "${branch}" already has an open pull request (#${existing.pull_request_id}).`,
+                'Open Pull Request',
+            );
+            if (choice === 'Open Pull Request') {
+                await vscode.env.openExternal(vscode.Uri.parse(client.pullRequestUrl(existing.pull_request_id)));
+            }
+            return;
+        }
+        const choice = await vscode.window.showInformationMessage(
+            `RhodeCode: Branch "${branch}" was pushed. Open a pull request?`,
+            'Create Pull Request',
+        );
+        if (choice === 'Create Pull Request') {
+            await vscode.commands.executeCommand('rhodecode.createPullRequest', branch);
+        }
+    } catch (err) {
+        reportError('check pull requests for pushed branch', err);
+    }
+}
 let client: RhodeCodeClient | undefined;
 let tree: PullRequestTreeProvider | undefined;
 let commentView: CommentViewProvider | undefined;
@@ -149,6 +194,9 @@ export function activate(context: vscode.ExtensionContext): void {
             await checkAndPromptForRhodeCode();
         }),
     );
+
+    // Offer to open/create a pull request whenever a branch is pushed (issue #6).
+    context.subscriptions.push(watchForPushes((branch) => void handleBranchPushed(branch)));
 
     // Kick off an initial load so the view is populated when configured.
     void (async () => {

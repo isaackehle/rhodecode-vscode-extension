@@ -127,6 +127,12 @@
                         "title": "Mark Handled Posts Comment",
                         "type": "boolean"
                     },
+                    "rhodecode.pushTips": {
+                        "default": true,
+                        "description": "After pushing a branch, show a notification linking to its open pull request, or offering to create one if it doesn't have one yet.",
+                        "title": "Push Tips",
+                        "type": "boolean"
+                    },
                     "rhodecode.serverurl": {
                         "default": "",
                         "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard.",
