@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.9.0 - 2026-08-07
+
+- Feat: implement message display feature (#7). Full messaging system that allows users to:
+    - Add new messages to an open PR by clicking on a line in a file then adding a message
+    - Reply to existing messages
+    - Mark TODO comments as complete by clicking a checkbox when hitting submit
+    - View line numbers, message types (NOTE vs TODO), response relationships, and status metadata
+
 ## 0.8.7 - 2026-08-07
 
 - Chore: add `bun run clean` script to remove build/test artifacts (`out/`, `.vscode-test/`, `.rumdl_cache/`,

@@ -299,7 +299,7 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
     const resolved = Boolean(c.comment_resolved_by);
     const statusLabel = c.comment_status && 'status_lbl' in c.comment_status ? c.comment_status.status_lbl : null;
     const location = c.comment_f_path ? `${c.comment_f_path}${c.comment_lineno ? ':' + c.comment_lineno : ''}` : null;
-    
+
     // Extract line number from message if it starts with @line:X
     let lineNumber: number | null = null;
     const lineMatch = c.comment_text.match(/^@line:(\d+)\s+/);
