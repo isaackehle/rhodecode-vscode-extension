@@ -1,6 +1,9 @@
 // Validates package.json manifest consistency to catch the class of bug where a
 // command is added but not wired into activationEvents (or vice versa), which
 // causes "command not found" on fresh installs.
+//
+// Note: Since VS Code 1.74+, activationEvents are auto-generated from contribution
+// declarations. The activationEvents field is optional and can be omitted.
 
 const path = require('path');
 const pkg = require(path.resolve(__dirname, '..', 'package.json'));
@@ -19,30 +22,37 @@ function check(name, ok, extra) {
 
 const contributed = new Set(pkg.contributes.commands.map(c => c.command));
 
-const activationCommands = new Set(
-    pkg.activationEvents
-        .filter(e => e.startsWith('onCommand:'))
-        .map(e => e.replace('onCommand:', '')),
-);
+// activationEvents is optional since VS Code 1.74+ - auto-generated from contributions
+const activationCommands = pkg.activationEvents
+    ? new Set(
+          pkg.activationEvents
+              .filter((e) => e.startsWith('onCommand:'))
+              .map((e) => e.replace('onCommand:', '')),
+      )
+    : new Set();
 
-// ---- every contributed command must have an activationEvent ---------------
+// ---- every contributed command must have an activationEvent (if activationEvents exists) ----
 
-for (const cmd of [...contributed].sort()) {
-    check(
-        `activationEvents includes ${cmd}`,
-        activationCommands.has(cmd),
-        `Add "onCommand:${cmd}" to activationEvents in package.json`,
-    );
-}
+if (pkg.activationEvents) {
+    for (const cmd of [...contributed].sort()) {
+        check(
+            `activationEvents includes ${cmd}`,
+            activationCommands.has(cmd),
+            `Add "onCommand:${cmd}" to activationEvents in package.json`,
+        );
+    }
 
-// ---- every onCommand activationEvent must map to a real command -----------
+    // ---- every onCommand activationEvent must map to a real command -----------
 
-for (const cmd of [...activationCommands].sort()) {
-    check(
-        `contributes.commands includes ${cmd}`,
-        contributed.has(cmd),
-        `"onCommand:${cmd}" in activationEvents has no matching entry in contributes.commands`,
-    );
+    for (const cmd of [...activationCommands].sort()) {
+        check(
+            `contributes.commands includes ${cmd}`,
+            contributed.has(cmd),
+            `"onCommand:${cmd}" in activationEvents has no matching entry in contributes.commands`,
+        );
+    }
+} else {
+    console.log('SKIP  activationEvents checks (field not present - VS Code auto-generates from contributions)');
 }
 
 // ---- every command registered in commands.ts must be contributed ----------

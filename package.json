@@ -1,20 +1,4 @@
 {
-    "activationEvents": [
-        "onView:rhodecode.pullRequests",
-        "onCommand:rhodecode.connect",
-        "onCommand:rhodecode.selectRepository",
-        "onCommand:rhodecode.openChangeset",
-        "onCommand:rhodecode.refresh",
-        "onCommand:rhodecode.showPullRequests",
-        "onCommand:rhodecode.showComments",
-        "onCommand:rhodecode.replyComment",
-        "onCommand:rhodecode.markHandled",
-        "onCommand:rhodecode.markUnhandled",
-        "onCommand:rhodecode.openPullRequest",
-        "onCommand:rhodecode.approveAndMerge",
-        "onCommand:rhodecode.createPullRequest",
-        "onCommand:rhodecode.addMessage"
-    ],
     "categories": [
         "Other"
     ],
