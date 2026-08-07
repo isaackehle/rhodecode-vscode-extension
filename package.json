@@ -210,7 +210,7 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "bun run compile",
         "prepackage": "bun run test",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
