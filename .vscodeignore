@@ -11,8 +11,16 @@ node_modules/**
 .rumdl.toml
 .oxlintrc.json
 .oxfmtrc.json
+.secretlintrc.json
+.hermes/**
+.claude/**
+.agents/**
+.clineignore
 AGENTS.md
 .rumdl_cache/**
 ISSUES.md
 issues.md
 bun.lock
+skills-lock.json
+.env
+.env.*
