@@ -1,0 +1,15 @@
+# Cline context excludes — cuts context bloat for this repo (mirrors .gitignore
+
+## per skills-private/fleet-gateway/SKILL.md "Cline" section — noted as a TODO
+
+## there, added 2026-08-07 while wiring Cline for this workspace)
+
+out
+node_modules
+.vscode-test/
+.rumdl_cache/
+*.vsix
+*.map
+bun.lock
+package-lock.json
+.DS_Store
