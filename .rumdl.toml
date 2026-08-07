@@ -10,6 +10,8 @@ exclude = [
     "dist",
     "build",
     "out",
+    ".agents",
+    ".claude",
 ]
 
 # Respect .gitignore files when scanning directories (default: true)
