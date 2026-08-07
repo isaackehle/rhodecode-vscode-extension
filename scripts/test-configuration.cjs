@@ -2,6 +2,7 @@
 // using the same vscode stub as test-extension-load.cjs so no live VS Code host is needed.
 
 const Module = require('module');
+const os = require('os');
 const path = require('path');
 
 const vscodeStubPath = path.resolve(__dirname, 'vscode-stub.cjs');
@@ -68,6 +69,20 @@ function withConfig(settings, fn) {
     }
 }
 
+// getApiKeyRaw() falls through to the real filesystem (os.homedir() + '/.env') when
+// apikeyFromEnv is on, so it must run against a directory guaranteed to have no .env —
+// otherwise the test silently depends on the machine it runs on (e.g. it fails on a
+// dev box that has a real ~/.env set up for the apikeyFromEnv feature).
+function withNoHomeEnvFile(fn) {
+    const orig = os.homedir;
+    os.homedir = () => path.join(os.tmpdir(), 'rhodecode-test-empty-home');
+    try {
+        return fn();
+    } finally {
+        os.homedir = orig;
+    }
+}
+
 // Reload configuration to pick up the stubbed vscode (already loaded via Module hook above)
 const { isApiKeyFromEnvEnabled, getApiKeyRaw } = require(path.resolve(__dirname, '..', 'out', 'configuration.js'));
 
@@ -88,7 +103,7 @@ check(
 
 check(
     'getApiKeyRaw returns undefined (no env file) when apikeyFromEnv on',
-    withConfig({ apikeyFromEnv: true }, () => getApiKeyRaw()) === undefined,
+    withNoHomeEnvFile(() => withConfig({ apikeyFromEnv: true }, () => getApiKeyRaw())) === undefined,
 );
 
 // ---- summary -------------------------------------------------------------
