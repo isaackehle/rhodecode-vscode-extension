@@ -2,7 +2,7 @@
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.8.4",
+    "version": "0.8.5",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",

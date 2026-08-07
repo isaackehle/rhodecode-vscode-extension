@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.8.5 - 2026-08-07
+
+- Chore: `vscode:prepublish` now runs `bun run compile` instead of `npm run compile`, matching the rest of the
+  toolchain (bun is the repo's preferred package manager).
+
 ## 0.8.4 - 2026-08-06
 
 - Feat: Auto-detect RhodeCode workspaces. When opening a workspace, the extension now checks if the git remote is a
