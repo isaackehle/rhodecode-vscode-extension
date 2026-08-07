@@ -207,7 +207,7 @@
                         "default": "",
                         "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard."
                     },
-                    "rhodecode.apikey": {
+                                        "rhodecode.apikey": {
                         "title": "API Key",
                         "type": "string",
                         "default": "",
@@ -219,6 +219,12 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Read RHODECODE_API_KEY from a .env file (workspace .env first, then ~/.env) instead of the rhodecode.apikey setting. When enabled, rhodecode.apikey is ignored so the key can stay out of a repo's .vscode/settings."
+                    },
+                    "rhodecode.markHandledPostsComment": {
+                        "title": "Mark Handled Posts Comment",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Also post a \"Marked as handled\" reply comment on the PR thread when you mark a comment handled. When disabled, handled state is tracked locally only."
                     }
                 }
             }
