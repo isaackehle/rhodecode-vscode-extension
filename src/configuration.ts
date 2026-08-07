@@ -53,17 +53,12 @@ export async function getApiUrl(): Promise<string | undefined> {
     }
 
     if (serverUrl) {
-        if (!/^https?:\/\//i.test(serverUrl)) {
+        if (!serverUrl.match(/^https?:\/\//i)) {
             serverUrl = 'https://' + serverUrl;
         }
         serverUrl = serverUrl.replace(/\/+$/, '');
     }
     return serverUrl;
-}
-
-export function getMarkHandledPostsComment(): boolean {
-    const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
-    return configuration.get<boolean>('markHandledPostsComment', false);
 }
 
 /* ------------------------------------------------------------------ */
@@ -103,7 +98,7 @@ export function normalizeServerUrl(input: string): { url: string } | { error: st
     if (!raw) {
         return { error: 'Server address is empty.' };
     }
-    if (!/^https?:\/\//i.test(raw)) {
+    if (!raw.match(/^https?:\/\//i)) {
         raw = 'https://' + raw;
     }
     raw = raw.replace(/\/+$/, '');
@@ -118,7 +113,7 @@ export function normalizeServerUrl(input: string): { url: string } | { error: st
     if (!/^[a-zA-Z0-9.-]+(:\d+)?$/.test(host) && !/^\[[0-9a-fA-F:]+\](:\d+)?$/.test(host)) {
         return { error: `"${host}" does not look like a host name or IP address.` };
     }
-    if (raw.includes('://') && !/^https?:\/\//i.test(raw)) {
+    if (raw.includes('://') && !raw.match(/^https?:\/\//i)) {
         return { error: 'Only http:// and https:// are supported.' };
     }
     return { url: raw };

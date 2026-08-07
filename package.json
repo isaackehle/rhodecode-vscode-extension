@@ -27,7 +27,8 @@
         "onCommand:rhodecode.markUnhandled",
         "onCommand:rhodecode.openPullRequest",
         "onCommand:rhodecode.approveAndMerge",
-        "onCommand:rhodecode.createPullRequest"
+        "onCommand:rhodecode.createPullRequest",
+        "onCommand:rhodecode.addMessage"
     ],
     "main": "./out/extension",
     "icon": "media/rhodecode-icon.png",
@@ -104,6 +105,18 @@
                 "title": "Open Changeset in Browser",
                 "category": "RhodeCode",
                 "icon": "$(globe)"
+            },
+            {
+                "command": "rhodecode.createPullRequest",
+                "title": "Create Pull Request",
+                "category": "RhodeCode",
+                "icon": "$(git-pull-request-create)"
+            },
+            {
+                "command": "rhodecode.addMessage",
+                "title": "Add Message",
+                "category": "RhodeCode",
+                "icon": "$(comment)"
             }
         ],
         "viewsContainers": {
@@ -168,6 +181,13 @@
                     "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/",
                     "group": "inline"
                 }
+            ],
+            "editor/context": [
+                {
+                    "command": "rhodecode.addMessage",
+                    "when": "editorFocus",
+                    "group": "navigation"
+                }
             ]
         },
         "viewsWelcome": [
@@ -191,19 +211,14 @@
                         "title": "API Key",
                         "type": "string",
                         "default": "",
-                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard. Ignored when 'API Key From Environment File' is enabled."
+                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard. Ignored when 'API Key From Environment File' is enabled.",
+                        "when": "rhodecode.apikeyFromEnv != true"
                     },
                     "rhodecode.apikeyFromEnv": {
                         "title": "API Key From Environment File",
                         "type": "boolean",
                         "default": false,
                         "description": "Read RHODECODE_API_KEY from a .env file (workspace .env first, then ~/.env) instead of the rhodecode.apikey setting. When enabled, rhodecode.apikey is ignored so the key can stay out of a repo's .vscode/settings."
-                    },
-                    "rhodecode.markHandledPostsComment": {
-                        "title": "Post a Reply Comment When Marking Handled",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "When false, 'mark as handled' is tracked locally in VS Code only."
                     }
                 }
             }
@@ -216,6 +231,7 @@
         "watch": "tsc -watch -p ./",
         "test": "bun run scripts/run-tests.cjs",
         "test:integration": "node out/test/runTests.js",
+        "test:unit": "bun test",
         "package": "vsce package --no-dependencies",
         "lint": "oxlint src",
         "lint:md": "rumdl check .",
