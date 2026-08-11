@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { RhodeCodeClient, reportError } from './rhodecoderequest';
 import { RepoGroup, RepoInfo } from './model/rhodecode';
 import { getServerUrlRaw, getApiKeyRaw } from './configuration';
@@ -26,7 +28,7 @@ export class RepoBrowserPanel {
     private repos: RepoInfo[] = [];
     private selectedRepoName: string | undefined;
     private searchQuery: string = '';
-    private selectedGroup: string | null = null;
+    private selectedGroups: Set<string> = new Set();
 
     private constructor(panel: vscode.WebviewPanel) {
         this.panel = panel;
@@ -49,14 +51,19 @@ export class RepoBrowserPanel {
                         this.searchQuery = message.query || '';
                         this.render();
                         break;
+                    case 'toggleGroup':
+                        this.toggleGroup(message.groupName);
+                        break;
                     case 'filterByGroup':
-                        this.selectedGroup = message.groupName || null;
-                        this.render();
+                        this.toggleGroup(message.groupName);
                         break;
                     case 'clearFilters':
                         this.searchQuery = '';
-                        this.selectedGroup = null;
+                        this.selectedGroups.clear();
                         this.render();
+                        break;
+                    case 'cloneRepo':
+                        await this.cloneRepo(message.repoName, message.cloneUri);
                         break;
                 }
             },
@@ -152,6 +159,106 @@ export class RepoBrowserPanel {
         this.render();
     }
 
+    /** Get the currently selected group (for backward compatibility). */
+    private get selectedGroup(): string | null {
+        if (this.selectedGroups.size === 0) {
+            return null;
+        }
+        // For backward compatibility, return the first selected group
+        return Array.from(this.selectedGroups)[0];
+    }
+
+    /** Toggle group selection for multi-filtering. */
+    private toggleGroup(groupName: string) {
+        if (this.selectedGroups.has(groupName)) {
+            this.selectedGroups.delete(groupName);
+        } else {
+            this.selectedGroups.add(groupName);
+        }
+        this.render();
+    }
+
+    /** Clone a repository to a chosen base folder. */
+    private async cloneRepo(repoName: string, cloneUri: string | null) {
+        if (!cloneUri) {
+            vscode.window.showErrorMessage(`Cannot clone repository: no clone URI available for "${repoName}"`);
+            return;
+        }
+
+        // Ask for base folder
+        const folders = await vscode.window.showOpenDialog({
+            openLabel: 'Select Base Folder',
+            canSelectFolders: true,
+            canSelectFiles: false,
+            canSelectMany: false,
+            title: 'Choose base folder for cloning',
+        });
+
+        if (!folders || folders.length === 0) {
+            return; // User cancelled
+        }
+
+        const baseFolder = folders[0].fsPath;
+        const repoFolder = path.join(baseFolder, repoName.split('/').pop() || repoName);
+
+        // Check if folder already exists
+        if (fs.existsSync(repoFolder)) {
+            const choice = await vscode.window.showWarningMessage(
+                `Repository folder already exists at: ${repoFolder}`,
+                { modal: true },
+                'Cancel',
+                'Overwrite',
+                'Open Existing',
+            );
+
+            if (choice === 'Cancel') {
+                return;
+            } else if (choice === 'Open Existing') {
+                // Open the existing folder
+                await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(repoFolder));
+                return;
+            } else if (choice === 'Overwrite') {
+                // Remove existing folder
+                try {
+                    fs.rmSync(repoFolder, { recursive: true, force: true });
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Failed to remove existing folder: ${message}`);
+                    return;
+                }
+            }
+        }
+
+        // Clone the repository
+        vscode.window.showInformationMessage(`Cloning ${repoName} to ${repoFolder}...`);
+
+        try {
+            const { exec } = await import('child_process');
+            const util = await import('util');
+            const execPromise = util.promisify(exec);
+
+            // Clone the repository
+            await execPromise(`git clone "${cloneUri}" "${repoFolder}"`);
+
+            vscode.window.showInformationMessage(`Successfully cloned ${repoName} to ${repoFolder}`);
+
+            // Ask if user wants to open the cloned repository
+            const openChoice = await vscode.window.showInformationMessage(
+                `Successfully cloned ${repoName}`,
+                { modal: false },
+                'Open Repository',
+                'Done',
+            );
+
+            if (openChoice === 'Open Repository') {
+                await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(repoFolder));
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            vscode.window.showErrorMessage(`Failed to clone repository: ${message}`);
+        }
+    }
+
     private render() {
         this.panel.webview.html = this.getHtmlContent();
     }
@@ -172,12 +279,12 @@ export class RepoBrowserPanel {
         const isConnected = !!serverUrl && !!apiKey;
         const currentRepo = getStoredRepo();
 
-        // Filter repos based on search query and selected group
+        // Filter repos based on search query and selected groups
         const filteredRepos = this.repos.filter((repo) => {
-            // Apply group filter
-            if (this.selectedGroup) {
+            // Apply group filter (multi-select)
+            if (this.selectedGroups.size > 0) {
                 const repoGroup = repo.repo_name.split('/')[0];
-                if (repoGroup !== this.selectedGroup) {
+                if (!this.selectedGroups.has(repoGroup)) {
                     return false;
                 }
             }
@@ -195,14 +302,15 @@ export class RepoBrowserPanel {
         // Build groups list
         let groupsHtml = '';
         if (this.groups.length > 0) {
+            const selectedGroupsLabel = this.selectedGroups.size > 0 ? ` (${this.selectedGroups.size} selected)` : '';
             groupsHtml = `
             <div class="section">
-                <h2>Groups (click to filter repositories)</h2>
+                <h2>Groups (click to filter repositories)${selectedGroupsLabel}</h2>
                 <div class="list">
                     ${this.groups
                         .map(
                             (g) => `
-                    <div class="list-item group-item ${g.group_name === this.selectedGroup ? 'active' : ''}" onclick="filterByGroup('${this.escapeHtml(g.group_name)}')">
+                    <div class="list-item group-item ${this.selectedGroups.has(g.group_name) ? 'active' : ''}" onclick="filterByGroup('${this.escapeHtml(g.group_name)}')">
                         <div class="item-name">${this.escapeHtml(g.group_name)}</div>
                         <div class="item-meta">${g.group_description ? this.escapeHtml(g.group_description) : 'No description'}</div>
                     </div>
@@ -230,10 +338,14 @@ export class RepoBrowserPanel {
                     ${filteredRepos
                         .map((r) => {
                             const isSelected = r.repo_name === this.selectedRepoName;
+                            const hasCloneUri = !!r.clone_uri;
                             return `
-                    <div class="list-item repo-item ${isSelected ? 'selected' : ''}" onclick="selectRepo('${this.escapeHtml(r.repo_name)}')">
-                        <div class="item-name">${this.escapeHtml(r.repo_name)}</div>
-                        <div class="item-meta">${r.repo_type || ''}${r.clone_uri ? ' · ' + this.escapeHtml(r.clone_uri) : ''}</div>
+                    <div class="list-item repo-item ${isSelected ? 'selected' : ''}">
+                        <div class="item-content" onclick="selectRepo('${this.escapeHtml(r.repo_name)}')">
+                            <div class="item-name">${this.escapeHtml(r.repo_name)}</div>
+                            <div class="item-meta">${r.repo_type || ''}${r.clone_uri ? ' · ' + this.escapeHtml(r.clone_uri) : ''}</div>
+                        </div>
+                        ${hasCloneUri ? `<button class="clone-btn" onclick="event.stopPropagation(); cloneRepo('${this.escapeHtml(r.repo_name)}', '${this.escapeHtml(r.clone_uri || '')}')">Clone</button>` : ''}
                     </div>
                     `;
                         })
@@ -320,6 +432,27 @@ export class RepoBrowserPanel {
         }
         .list-item.repo-item.selected .item-meta {
             color: var(--vscode-list-activeSelectionForeground);
+        }
+        .repo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .item-content {
+            flex: 1;
+            cursor: pointer;
+        }
+        .clone-btn {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: 1px solid var(--vscode-button-secondaryBorder);
+            padding: 4px 12px;
+            font-size: 0.85em;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+        .clone-btn:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
         }
         .list-item.group-item {
             border-left: 3px solid transparent;
@@ -423,6 +556,9 @@ export class RepoBrowserPanel {
         }
         function clearFilters() {
             vscode.postMessage({ type: 'clearFilters' });
+        }
+        function cloneRepo(repoName, cloneUri) {
+            vscode.postMessage({ type: 'cloneRepo', repoName, cloneUri });
         }
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('repo-search');
