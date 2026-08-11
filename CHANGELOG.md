@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.8.6 - 2026-08-07
+
+- Test: fixed `scripts/test-configuration.cjs` — the `getApiKeyRaw returns undefined (no env file)` case read the
+  real `~/.env` via `os.homedir()` without mocking it, so it failed on any machine (e.g. WSL) that has a real
+  `RHODECODE_API_KEY` set up for the `apikeyFromEnv` feature. The test now stubs `os.homedir()` to a directory
+  guaranteed to have no `.env`, making it hermetic regardless of the host machine.
+
 ## 0.8.5 - 2026-08-07
 
 - Chore: `vscode:prepublish` now runs `bun run compile` instead of `npm run compile`, matching the rest of the
