@@ -279,7 +279,7 @@ export function registerCommands(
             }
         }),
 
-        vscode.commands.registerCommand('rhodecode.createPullRequest', async () => {
+        vscode.commands.registerCommand('rhodecode.createPullRequest', async (prefillSourceBranch?: string) => {
             const client = getClient();
             if (!client) {
                 return;
@@ -288,6 +288,7 @@ export function registerCommands(
                 const sourceBranch = await vscode.window.showInputBox({
                     placeHolder: 'Source branch name',
                     prompt: 'Please enter the branch name of the source branch',
+                    value: prefillSourceBranch,
                 });
                 if (!sourceBranch) {
                     return;
