@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient } from './rhodecoderequest';
+import { RhodeCodeClient, reportError } from './rhodecoderequest';
 import { PullRequestCommentData, RhodeCodePullRequest } from './model/rhodecode';
 import { parsePullRequestComments } from './commentParser';
 import { PullRequestTreeProvider } from './pullRequestTreeProvider';
@@ -71,50 +71,54 @@ export class CommentViewProvider {
 
         const repoId = await getRepoIdForStore();
 
-        switch (message.type) {
-            case 'reply': {
-                if (!message.commentId || !message.text) {
-                    return;
+        try {
+            switch (message.type) {
+                case 'reply': {
+                    if (!message.commentId || !message.text) {
+                        return;
+                    }
+                    await client.commentOnPullRequest(this.pr.pull_request_id, message.text);
+                    await this.tree.invalidateComments(this.pr);
+                    await this.render();
+                    break;
                 }
-                await client.commentOnPullRequest(this.pr.pull_request_id, message.text);
-                await this.tree.invalidateComments(this.pr);
-                await this.render();
-                break;
+                case 'resolveTask': {
+                    if (!message.commentId || !message.text) {
+                        return;
+                    }
+                    await client.resolveTodoComment(this.pr.pull_request_id, message.commentId, message.text);
+                    await this.tree.invalidateComments(this.pr);
+                    vscode.window.showInformationMessage('Task resolved.');
+                    await this.render();
+                    break;
+                }
+                case 'addTask': {
+                    if (!message.text) {
+                        return;
+                    }
+                    await client.addTodoComment(this.pr.pull_request_id, message.text);
+                    await this.tree.invalidateComments(this.pr);
+                    vscode.window.showInformationMessage('Task added.');
+                    await this.render();
+                    break;
+                }
+                case 'toggleHandled': {
+                    if (!message.commentId) {
+                        return;
+                    }
+                    const handled = this.tree.store.isHandled(repoId, this.pr.pull_request_id, message.commentId);
+                    this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, !handled);
+                    if (!handled && getMarkHandledPostsComment()) {
+                        await client.commentOnPullRequest(this.pr.pull_request_id, 'Marked as handled ✔');
+                    }
+                    await this.render();
+                    break;
+                }
+                default:
+                    break;
             }
-            case 'resolveTask': {
-                if (!message.commentId || !message.text) {
-                    return;
-                }
-                await client.resolveTodoComment(this.pr.pull_request_id, message.commentId, message.text);
-                await this.tree.invalidateComments(this.pr);
-                vscode.window.showInformationMessage('Task resolved.');
-                await this.render();
-                break;
-            }
-            case 'addTask': {
-                if (!message.text) {
-                    return;
-                }
-                await client.addTodoComment(this.pr.pull_request_id, message.text);
-                await this.tree.invalidateComments(this.pr);
-                vscode.window.showInformationMessage('Task added.');
-                await this.render();
-                break;
-            }
-            case 'toggleHandled': {
-                if (!message.commentId) {
-                    return;
-                }
-                const handled = this.tree.store.isHandled(repoId, this.pr.pull_request_id, message.commentId);
-                this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, !handled);
-                if (!handled && getMarkHandledPostsComment()) {
-                    await client.commentOnPullRequest(this.pr.pull_request_id, 'Marked as handled ✔');
-                }
-                await this.render();
-                break;
-            }
-            default:
-                break;
+        } catch (err) {
+            reportError(message.type, err);
         }
     }
 
