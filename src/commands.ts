@@ -6,6 +6,7 @@ import { CommentViewProvider } from './commentViewProvider';
 import { setupConnection, browseRepositories } from './serverSetup';
 import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
 import { setStoredRepo } from './repoState';
+import { RepoBrowserPanel } from './repoBrowserPanel';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -315,6 +316,10 @@ export function registerCommands(
             } catch (err) {
                 reportError('create pull request', err);
             }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.openRepoBrowser', () => {
+            RepoBrowserPanel.createOrShow(context);
         }),
     );
 }

@@ -72,6 +72,12 @@
             },
             {
                 "category": "RhodeCode",
+                "command": "rhodecode.openRepoBrowser",
+                "icon": "$(list-flat)",
+                "title": "Open Repository Browser"
+            },
+            {
+                "category": "RhodeCode",
                 "command": "rhodecode.openChangeset",
                 "icon": "$(globe)",
                 "title": "Open Changeset in Browser"
@@ -177,6 +183,11 @@
                     "command": "rhodecode.selectRepository",
                     "group": "navigation@3",
                     "when": "view == rhodecode.pullRequests"
+                },
+                {
+                    "command": "rhodecode.openRepoBrowser",
+                    "group": "navigation@4",
+                    "when": "view == rhodecode.pullRequests"
                 }
             ]
         },
@@ -252,5 +263,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.10.1"
+    "version": "0.11.0"
 }

@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.11.0 - 2026-08-07
+
+- **Feat**: Repository browser panel (#13). A new webview panel shows the current server URL,
+  connected repository, groups, and all accessible repositories. Users can click on any repository
+to switch to it, with the selection persisted across sessions. The panel provides a visual interface
+  for browsing and managing repository connections.
+
 ## v0.10.1 - 2026-08-07
 
 - **Lint**: Remove redundant `activationEvents` from `package.json` (#14). VS Code 1.74+ auto-generates
