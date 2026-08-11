@@ -25,11 +25,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install rumdl globally
+        run: bun add -g rumdl
+
       - name: Run lint and format checks
         run: |
           bun run lint
           bun run format:check
-          bun run lint:md
+          rumdl check .
 
       - name: Compile
         run: bun run compile
