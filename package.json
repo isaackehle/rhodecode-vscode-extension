@@ -221,7 +221,8 @@
         "lint:md": "rumdl check .",
         "format": "oxfmt --write \"src/**/*.ts\"",
         "format:check": "oxfmt --check \"src/**/*.ts\"",
-        "format:md": "rumdl fmt ."
+        "format:md": "rumdl fmt .",
+        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete"
     },
     "devDependencies": {
         "@types/node": "^20.11.0",
