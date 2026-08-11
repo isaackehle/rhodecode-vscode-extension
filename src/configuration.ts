@@ -8,6 +8,15 @@ export function isApiKeyFromEnvEnabled(): boolean {
     return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<boolean>('apikeyFromEnv', false);
 }
 
+/**
+ * Whether marking a comment as handled should also post a reply comment to
+ * the PR thread (rhodecode.markHandledPostsComment).
+ * When false, handled state is tracked locally only.
+ */
+export function isMarkHandledPostsCommentEnabled(): boolean {
+    return vscode.workspace.getConfiguration(CONFIGURATION_SECTION).get<boolean>('markHandledPostsComment', false);
+}
+
 export async function getApiKey(): Promise<string | undefined> {
     const configuration = vscode.workspace.getConfiguration(CONFIGURATION_SECTION);
 

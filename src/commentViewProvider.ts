@@ -4,6 +4,7 @@ import { PullRequestCommentData, RhodeCodePullRequest } from './model/rhodecode'
 import { parsePullRequestComments } from './commentParser';
 import { PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { getRepoIdRaw } from './repoState';
+import { isMarkHandledPostsCommentEnabled } from './configuration';
 
 interface DisplayComment {
     id: string;
@@ -107,7 +108,20 @@ export class CommentViewProvider {
                         return;
                     }
                     const handled = this.tree.store.isHandled(repoId, this.pr.pull_request_id, message.commentId);
-                    this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, !handled);
+                    const nowHandled = !handled;
+                    this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, nowHandled);
+                    // When enabling "posts comment", also post a reply to the PR thread
+                    // so the handled state is visible on the RhodeCode server.
+                    if (nowHandled && isMarkHandledPostsCommentEnabled()) {
+                        const client = this.getClient();
+                        if (client) {
+                            try {
+                                await client.commentOnPullRequest(this.pr.pull_request_id, `Marked as handled`);
+                            } catch (err) {
+                                reportError('markHandled', err);
+                            }
+                        }
+                    }
                     await this.render();
                     break;
                 }

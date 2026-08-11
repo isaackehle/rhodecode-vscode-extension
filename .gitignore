@@ -7,3 +7,4 @@ ISSUES.md
 issues.md
 package-lock.json
 .env
+.claude/skills/

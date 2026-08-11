@@ -15,6 +15,8 @@ node_modules/**
 .hermes/**
 .claude/**
 .agents/**
+.claude/skills
+.claude/skills/*
 .clineignore
 AGENTS.md
 .rumdl_cache/**
