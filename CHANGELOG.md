@@ -1,18 +1,44 @@
 # Change Log
 
+## 0.8.3 - 2026-08-06
+
+- Test: add manifest consistency check (`activationEvents` vs `contributes.commands` vs
+  `registerCommand`). Ensures every contributed command is registered in `commands.ts` and
+  listed in `activationEvents` to prevent "command not found" errors on fresh installs.
+- Test: add `scripts/test-manifest.cjs` — validates `activationEvents` includes all
+  `rhodecode.*` commands and `contributes.commands` entries, and that each command is
+  registered in `commands.ts`.
+
 ## 0.8.2 - 2026-08-06
 
+- Test: add manifest consistency check (`activationEvents` vs `contributes.commands` vs
+  `registerCommand`). Ensures every contributed command is registered in `commands.ts` and
+  listed in `activationEvents` to prevent "command not found" errors on fresh installs.
+- Test: add `scripts/test-manifest.cjs` — validates `activationEvents` includes all
+  `rhodecode.*` commands and `contributes.commands` entries, and that each command is
+  registered in `commands.ts`.
+- Test: add `scripts/test-server-setup.cjs` — unit tests for `promptApiKey`, `promptGroup`,
+  `promptRepository` with stubbed `window.showInputBox`/`showQuickPick`, covering retry
+  logic, cancellation, and valid selections.
+- Test: add `scripts/test-comment-view-provider.cjs` — unit tests for `CommentViewProvider`
+  with stubbed `window.createWebviewPanel`, testing rejected/successful client calls for
+  reply, resolve task, add task, and toggle handled.
+- Test: add `scripts/test-select-repository.cjs` — unit tests for `selectRepository` command
+  with stubbed `connect`, `browseRepos`, and `refreshAll`, covering success path,
+  cancellation, and client rebuild.
+- Test: add `@vscode/test-electron` integration harness (`src/test/`). `bun run
+  test:integration` boots a real VS Code instance and runs 21 tests: extension activation,
+  command registration, configuration schema defaults, and `apikeyFromEnv` setting behaviour
+  end-to-end.
+- Test: add `scripts/test-configuration.cjs` — 14 stub-based unit tests for
+  `normalizeServerUrl`, `isApiKeyFromEnvEnabled`, and `getApiKeyRaw`. `bun run test` now
+  runs 43 tests total.
 - Feat: Add `rhodecode.apikeyFromEnv` setting.
   Reads `RHODECODE_API_KEY` from `.env` file (workspace first, then `~/.env`).
   Ignores `rhodecode.apikey` setting to prevent accidental commitment of API keys to repo `.vscode/settings`.
 - Feat: When `apikeyFromEnv` is enabled and no env-file key is found, show a clear error message instead of falling back to the setting or prompting.
 - Feat: Connect wizard detects env-file keys and allows keeping or overriding them for the session only (typed keys are not persisted to settings).
 - Chore: Add `prepackage` script that runs tests before packaging to ensure releases only pass when all tests succeed.
-- Test: Add `scripts/test-configuration.cjs` — 14 stub-based unit tests for `normalizeServerUrl`,
-  `isApiKeyFromEnvEnabled`, and `getApiKeyRaw`. `bun run test` now runs 43 tests total.
-- Test: Add `@vscode/test-electron` integration harness (`src/test/`). `bun run test:integration` boots a real VS Code
-  instance and runs 21 tests: extension activation, command registration, configuration schema defaults, and
-  `apikeyFromEnv` setting behaviour end-to-end.
 
 ## 0.8.1 - 2026-08-05
 
