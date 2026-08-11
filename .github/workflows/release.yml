@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  update-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        id: version
+        run: |
+          VERSION=$(grep -o '"version": "[^"]*"' package.json | cut -d'"' -f4)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get commit message
+        id: commit
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+
+      - name: Extract issue number from commit message
+        id: issue
+        run: |
+          ISSUE_NUM=$(echo "${{ steps.commit.outputs.message }}" | grep -oP '#[0-9]+' | tr -d '#')
+          if [ -n "$ISSUE_NUM" ]; then
+            echo "number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on issue and close
+        if: steps.issue.outputs.number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = '${{ steps.issue.outputs.number }}';
+            const commitHash = context.sha;
+            const version = '${{ steps.version.outputs.version }}';
+            const commitMessage = '${{ steps.commit.outputs.message }}';
+
+            // Comment on the issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(issueNumber),
+              body: `🚀 **Release ${version}**\n\nThis issue was resolved in commit [${commitHash.slice(0, 7)}](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitHash}).\n\n**Commit message:**\n\`\`\`\n${commitMessage}\n\`\`\``
+            });
+
+            // Close the issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(issueNumber),
+              state: 'closed'
+            });
