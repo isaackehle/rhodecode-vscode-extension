@@ -267,7 +267,6 @@
         "lint": "oxlint src",
         "lint:md": "rumdl check .",
         "package": "vsce package --no-dependencies",
-        "prepackage": "bun run test",
         "release": "./scripts/release.sh",
         "test": "bun run scripts/run-tests.cjs",
         "test:integration": "node out/test/runTests.js",

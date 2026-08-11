@@ -25,7 +25,8 @@ jobs:
       - name: Get commit message
         id: commit
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
+          # Get commit message and replace newlines with placeholder for GITHUB_OUTPUT
+          COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ' | sed 's/  */ /g')
           echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
 
       - name: Extract issue number from commit message
@@ -45,14 +46,17 @@ jobs:
             const issueNumber = '${{ steps.issue.outputs.number }}';
             const commitHash = context.sha;
             const version = '${{ steps.version.outputs.version }}';
-            const commitMessage = '${{ steps.commit.outputs.message }}';
+            const commitMessage = `${{ steps.commit.outputs.message }}`;
+
+            // Create a nicely formatted comment
+            const commentBody = `🚀 **Release ${version}**\n\nThis issue was resolved in commit [${commitHash.slice(0, 7)}](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitHash}).\n\n**Commit message:**\n\`\`\`\n${commitMessage}\n\`\`\``;
 
             // Comment on the issue
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: parseInt(issueNumber),
-              body: `🚀 **Release ${version}**\n\nThis issue was resolved in commit [${commitHash.slice(0, 7)}](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitHash}).\n\n**Commit message:**\n\`\`\`\n${commitMessage}\n\`\`\``
+              body: commentBody
             });
 
             // Close the issue
