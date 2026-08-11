@@ -7,6 +7,8 @@
   "trailingComma": "all",
   "semi": true,
   "ignorePatterns": [
-    "out/**"
+    "out/**",
+    ".agents/**",
+    ".claude/**"
   ]
 }
