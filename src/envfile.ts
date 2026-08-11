@@ -19,8 +19,13 @@ const ENV_KEY = 'RHODECODE_API_KEY';
 function readEnvFile(dir: string): Record<string, string> | undefined {
     const file = path.join(dir, '.env');
     try {
+        // Check if file exists before reading (avoids Windows permission issues)
+        if (!fs.existsSync(file)) {
+            return undefined;
+        }
         return parseDotEnv(fs.readFileSync(file, 'utf8'));
     } catch {
+        // Silently ignore permission errors, file not found, etc.
         return undefined;
     }
 }

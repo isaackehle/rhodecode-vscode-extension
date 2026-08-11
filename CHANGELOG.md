@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.9.3 - 2026-08-07
+
+- Fix: Add `.gitattributes` file to ensure consistent line endings across platforms and prevent Windows "scanning secrets" errors during build.
+- Fix: Improve Windows compatibility in `src/envfile.ts` by checking file existence before reading `.env` files to avoid permission errors.
+
 ## v0.9.2 - 2026-08-07
 
 ## 0.8.7 - 2026-08-07
