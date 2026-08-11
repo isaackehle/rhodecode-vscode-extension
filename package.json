@@ -2,7 +2,7 @@
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "publisher": "isaackehle",
     "repository": {
         "type": "git",
@@ -238,7 +238,8 @@
         "format": "oxfmt --write \"src/**/*.ts\"",
         "format:check": "oxfmt --check \"src/**/*.ts\"",
         "format:md": "rumdl fmt .",
-        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete"
+        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete",
+        "release": "./scripts/release.sh"
     },
     "devDependencies": {
         "@types/node": "^20.11.0",
