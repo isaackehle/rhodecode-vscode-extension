@@ -6,63 +6,83 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
 
 jobs:
-  update-issue:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run lint and format checks
+        run: |
+          bun run lint
+          bun run format:check
+          bun run lint:md
+
+      - name: Compile
+        run: bun run compile
+
+      - name: Package extension
+        run: bun run package
+        id: package
 
       - name: Get version from package.json
         id: version
         run: |
-          VERSION=$(grep -o '"version": "[^"]*"' package.json | cut -d'"' -f4)
+          VERSION=$(cat package.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Get commit message
-        id: commit
+      - name: Extract changelog for this version
+        id: changelog
         run: |
-          # Get commit message and replace newlines with placeholder for GITHUB_OUTPUT
-          COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ' | sed 's/  */ /g')
-          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          VERSION=${{ steps.version.outputs.version }}
+          # Extract the changelog entry for this version
+          awk -v ver="$VERSION" '
+            /^## v/ {
+              if (in_section && ver != current_ver) exit
+              if ($2 == "v" ver) {
+                in_section = 1
+                current_ver = $2
+                next
+              } else if (in_section) {
+                exit
+              }
+            }
+            in_section { print }
+          ' CHANGELOG.md > /tmp/changelog.txt
+          # Remove trailing empty lines
+          sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /tmp/changelog.txt
+          cat /tmp/changelog.txt
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/changelog.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Extract issue number from commit message
-        id: issue
+      - name: Find .vsix file
+        id: vsix
         run: |
-          ISSUE_NUM=$(echo "${{ steps.commit.outputs.message }}" | grep -oP '#[0-9]+' | tr -d '#')
-          if [ -n "$ISSUE_NUM" ]; then
-            echo "number=$ISSUE_NUM" >> $GITHUB_OUTPUT
-          fi
+          VSIX_FILE=$(ls -1 *.vsix | head -1)
+          echo "file=$VSIX_FILE" >> $GITHUB_OUTPUT
 
-      - name: Comment on issue and close
-        if: steps.issue.outputs.number != ''
-        uses: actions/github-script@v7
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueNumber = '${{ steps.issue.outputs.number }}';
-            const commitHash = context.sha;
-            const version = '${{ steps.version.outputs.version }}';
-            const commitMessage = `${{ steps.commit.outputs.message }}`;
-
-            // Create a nicely formatted comment
-            const commentBody = `🚀 **Release ${version}**\n\nThis issue was resolved in commit [${commitHash.slice(0, 7)}](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitHash}).\n\n**Commit message:**\n\`\`\`\n${commitMessage}\n\`\`\``;
-
-            // Comment on the issue
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: parseInt(issueNumber),
-              body: commentBody
-            });
-
-            // Close the issue
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: parseInt(issueNumber),
-              state: 'closed'
-            });
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: ${{ steps.vsix.outputs.file }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
