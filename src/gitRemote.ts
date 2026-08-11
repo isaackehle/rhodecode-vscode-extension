@@ -14,6 +14,7 @@ const execFileAsync = promisify(execFile);
 export interface GitRemoteResult {
     url: string;
     path: string;
+    branch?: string;
 }
 
 /**
@@ -35,7 +36,25 @@ export async function getGitRemoteUrl(workspaceRoot: string): Promise<GitRemoteR
         if (!path) {
             return undefined;
         }
-        return { url, path };
+        const branch = await getCurrentBranch(workspaceRoot);
+        return { url, path, branch };
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Get the current branch name using `git rev-parse --abbrev-ref HEAD`.
+ * Returns undefined if not in a git repo or on a detached HEAD.
+ */
+export async function getCurrentBranch(workspaceRoot: string): Promise<string | undefined> {
+    try {
+        const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+            cwd: workspaceRoot,
+            timeout: 5000,
+        });
+        const branch = stdout.trim();
+        return branch || undefined;
     } catch {
         return undefined;
     }

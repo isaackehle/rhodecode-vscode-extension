@@ -9,6 +9,7 @@ import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo
 import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './gitRemote';
 import { watchForPushes } from './pushWatcher';
 import { RepoInfo } from './model/rhodecode';
+import { PRStatusBar } from './prStatusBar';
 
 /** Branches that never get their own pull request, so the push tip is skipped for them. */
 const DEFAULT_BRANCH_NAMES = new Set(['master', 'main', 'trunk']);
@@ -56,6 +57,7 @@ async function handleBranchPushed(branch: string): Promise<void> {
 let client: RhodeCodeClient | undefined;
 let tree: PullRequestTreeProvider | undefined;
 let commentView: CommentViewProvider | undefined;
+let prStatusBar: PRStatusBar | undefined;
 
 /** Persistent status bar entry: shows connection state, click to connect/switch repo. */
 function updateStatusBar(item: vscode.StatusBarItem): void {
@@ -84,7 +86,8 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
 
 /**
  * Check if the current workspace is a RhodeCode repository and trigger
- * the connect wizard if not already connected.
+ * the connect wizard if not already connected, or auto-detect the repo
+ * if connected but no repo is selected (issue #15).
  */
 async function checkAndPromptForRhodeCode(): Promise<void> {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -97,26 +100,43 @@ async function checkAndPromptForRhodeCode(): Promise<void> {
         return;
     }
 
-    // Already connected? Skip prompt.
-    if (getServerUrlRaw()) {
+    // Already connected and repo selected? Skip.
+    if (getServerUrlRaw() && getStoredRepo()) {
         return;
     }
 
-    // Prompt user to connect
-    const choice = await vscode.window.showInformationMessage(
-        'Detected a RhodeCode repository. Connect now?',
-        'Connect',
-        'Later',
-    );
+    // Not connected yet - prompt to connect
+    if (!getServerUrlRaw()) {
+        const choice = await vscode.window.showInformationMessage(
+            'Detected a RhodeCode repository. Connect now?',
+            'Connect',
+            'Later',
+        );
 
-    if (choice === 'Connect') {
-        // Pre-fill the server URL from the detected remote
-        const host = extractServerHost(remote.url);
-        if (host) {
-            await vscode.commands.executeCommand('rhodecode.connect', host);
-        } else {
-            await vscode.commands.executeCommand('rhodecode.connect');
+        if (choice === 'Connect') {
+            // Pre-fill the server URL from the detected remote
+            const host = extractServerHost(remote.url);
+            if (host) {
+                await vscode.commands.executeCommand('rhodecode.connect', host);
+            } else {
+                await vscode.commands.executeCommand('rhodecode.connect');
+            }
         }
+        return;
+    }
+
+    // Connected but no repo selected - auto-detect (issue #15)
+    try {
+        const detectClient = await RhodeCodeClient.createForDetection();
+        if (detectClient) {
+            const match = await autoDetectRepository(detectClient);
+            if (match) {
+                // Auto-select the detected repository
+                vscode.window.showInformationMessage(`Auto-detected RhodeCode repository "${match.repo_name}"`);
+            }
+        }
+    } catch (err) {
+        reportError('auto-detect repository', err);
     }
 }
 
@@ -151,12 +171,14 @@ export function activate(context: vscode.ExtensionContext): void {
     client = undefined;
     tree = new PullRequestTreeProvider(() => client, store);
     commentView = new CommentViewProvider(() => client, tree);
+    prStatusBar = new PRStatusBar(() => client);
 
     const treeView = vscode.window.createTreeView('rhodecode.pullRequests', {
         treeDataProvider: tree,
         showCollapseAll: false,
     });
     context.subscriptions.push(treeView);
+    context.subscriptions.push(prStatusBar);
 
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBar);
@@ -167,6 +189,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const refreshAll = async (): Promise<void> => {
         updateStatusBar(statusBar);
+        prStatusBar?.update();
         tree?.refresh();
         try {
             await tree?.load();

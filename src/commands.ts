@@ -6,6 +6,7 @@ import { CommentViewProvider } from './commentViewProvider';
 import { setupConnection, browseRepositories } from './serverSetup';
 import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
 import { setStoredRepo } from './repoState';
+import { getCurrentBranch } from './gitRemote';
 import { RepoBrowserPanel } from './repoBrowserPanel';
 
 export function registerCommands(
@@ -320,6 +321,104 @@ export function registerCommands(
 
         vscode.commands.registerCommand('rhodecode.openRepoBrowser', () => {
             RepoBrowserPanel.createOrShow(context);
+        }),
+
+        // Issue #16: Open PR for current branch
+        vscode.commands.registerCommand('rhodecode.openCurrentBranchPr', async (pr?: RhodeCodePullRequest) => {
+            const client = getClient();
+            if (!client) {
+                return;
+            }
+
+            // If PR passed as argument, use it; otherwise fetch it
+            let pullRequest: RhodeCodePullRequest | undefined = pr;
+            if (!pullRequest) {
+                const folder = vscode.workspace.workspaceFolders?.[0];
+                if (!folder) {
+                    return;
+                }
+                const branch = await getCurrentBranch(folder.uri.fsPath);
+                if (!branch) {
+                    return;
+                }
+                // getPullRequests() (default status 'new') already returns open PRs.
+                const prs = await client.getPullRequests();
+                pullRequest = prs.find((p) => p.source.reference.name === branch);
+            }
+
+            if (!pullRequest) {
+                vscode.window.showInformationMessage('No pull request found for current branch.');
+                return;
+            }
+
+            // Show options for opening the PR
+            const choice = await vscode.window.showQuickPick(
+                [
+                    { label: 'Open in Browser', value: 'browser' },
+                    { label: 'Open in VS Code', value: 'vscode' },
+                ],
+                { placeHolder: 'How do you want to open the pull request?' },
+            );
+
+            if (choice?.value === 'browser') {
+                await vscode.env.openExternal(vscode.Uri.parse(client.pullRequestUrl(pullRequest.pull_request_id)));
+            } else if (choice?.value === 'vscode') {
+                await commentView.show(pullRequest);
+            }
+        }),
+
+        // Issue #16: Create PR for current branch
+        vscode.commands.registerCommand('rhodecode.createPrForCurrentBranch', async (prefillBranch?: string) => {
+            const client = getClient();
+            if (!client) {
+                return;
+            }
+
+            const folder = vscode.workspace.workspaceFolders?.[0];
+            if (!folder) {
+                return;
+            }
+
+            const branch = prefillBranch || (await getCurrentBranch(folder.uri.fsPath));
+            if (!branch) {
+                vscode.window.showErrorMessage('No branch detected.');
+                return;
+            }
+
+            // Skip default branches
+            const defaultBranches = new Set(['master', 'main', 'trunk']);
+            if (defaultBranches.has(branch.toLowerCase())) {
+                vscode.window.showInformationMessage(
+                    `Branch "${branch}" is a default branch and typically doesn't need a pull request.`,
+                );
+                return;
+            }
+
+            try {
+                const targetBranch = await vscode.window.showInputBox({
+                    placeHolder: 'Target branch name',
+                    prompt: 'Please enter the branch name to merge into',
+                    value: 'master',
+                });
+                if (!targetBranch) {
+                    return;
+                }
+
+                const name = await vscode.window.showInputBox({
+                    placeHolder: 'Pull request name',
+                    prompt: 'Please enter a name for your pull request',
+                    value: `From ${branch} to ${targetBranch}`,
+                });
+                if (!name) {
+                    return;
+                }
+
+                await client.createPullRequest(branch, targetBranch, name);
+                vscode.window.showInformationMessage(`Created pull request for branch "${branch}".`);
+                await tree.load();
+            } catch (err) {
+                reportError('create pull request', err);
+            }
         }),
     );
 }

@@ -1,10 +1,26 @@
-// Unit tests for gitRemote.ts pure functions (isRhodeCodeRemote, extractServerHost)
+// Unit tests for gitRemote.ts functions
+// Tests: isRhodeCodeRemote, extractServerHost, normalizeRepoPath, cloneUrisMatch, getGitRemoteUrl, getCurrentBranch
 
-import { isRhodeCodeRemote, extractServerHost, normalizeRepoPath, cloneUrisMatch } from '../src/gitRemote';
+import {
+    isRhodeCodeRemote,
+    extractServerHost,
+    normalizeRepoPath,
+    cloneUrisMatch,
+    getGitRemoteUrl,
+    getCurrentBranch,
+} from '../src/gitRemote';
+import { mkdir, writeFile, rm } from 'fs/promises';
+import { join } from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 let failures = 0;
+let testCount = 0;
 
 function check(name: string, ok: boolean, extra?: string): void {
+    testCount++;
     console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`);
     if (!ok) {
         failures++;
@@ -78,11 +94,109 @@ for (const c of matchCases) {
     check(c.name, got === c.want, `want ${c.want}, got ${got}`);
 }
 
+// ---- getGitRemoteUrl and getCurrentBranch (integration tests) ------------
+
+async function runGitTests(): Promise<void> {
+    const tmpDir = join('/tmp', `git-test-${Date.now()}`);
+
+    try {
+        // Create a temporary directory and initialize a git repo
+        await mkdir(tmpDir, { recursive: true });
+        await writeFile(join(tmpDir, 'README.md'), 'test');
+
+        // Initialize git repo
+        await execFileAsync('git', ['init'], { cwd: tmpDir });
+        await execFileAsync('git', ['config', 'user.name', 'Test User'], { cwd: tmpDir });
+        await execFileAsync('git', ['config', 'user.email', 'test@example.com'], { cwd: tmpDir });
+        await execFileAsync('git', ['add', 'README.md'], { cwd: tmpDir });
+        await execFileAsync('git', ['commit', '-m', 'Initial commit'], { cwd: tmpDir });
+
+        // Test 1: getGitRemoteUrl with https remote
+        await execFileAsync('git', ['remote', 'add', 'origin', 'https://example.com/rhodecode/test-repo'], {
+            cwd: tmpDir,
+        });
+        let result = await getGitRemoteUrl(tmpDir);
+        check(
+            'getGitRemoteUrl with https remote',
+            result !== undefined &&
+                result.url === 'https://example.com/rhodecode/test-repo' &&
+                result.path === 'rhodecode/test-repo' &&
+                (result.branch === 'master' || result.branch === 'main'), // Git 2.x+ uses 'main' by default
+            `got: ${JSON.stringify(result)}`,
+        );
+
+        // Test 2: getGitRemoteUrl with ssh remote
+        await execFileAsync('git', ['remote', 'set-url', 'origin', 'git@example.com:rhodecode/test-repo.git'], {
+            cwd: tmpDir,
+        });
+        result = await getGitRemoteUrl(tmpDir);
+        check(
+            'getGitRemoteUrl with ssh remote',
+            result !== undefined &&
+                result.url === 'git@example.com:rhodecode/test-repo.git' &&
+                result.path === 'rhodecode/test-repo',
+            `got: ${JSON.stringify(result)}`,
+        );
+
+        // Test 3: getCurrentBranch on feature branch
+        await execFileAsync('git', ['checkout', '-b', 'feature-branch'], { cwd: tmpDir });
+        const branch = await getCurrentBranch(tmpDir);
+        check('getCurrentBranch on feature branch', branch === 'feature-branch', `got: ${branch}`);
+
+        // Test 4: getGitRemoteUrl returns undefined for non-git directory
+        const nonGitDir = join('/tmp', `non-git-test-${Date.now()}`);
+        await mkdir(nonGitDir);
+        const notGitResult = await getGitRemoteUrl(nonGitDir);
+        check(
+            'getGitRemoteUrl returns undefined for non-git directory',
+            notGitResult === undefined,
+            `got: ${JSON.stringify(notGitResult)}`,
+        );
+        await rm(nonGitDir, { recursive: true, force: true });
+
+        // Test 5: getGitRemoteUrl returns undefined when no remote
+        const noRemoteDir = join(tmpDir, 'no-remote');
+        await mkdir(noRemoteDir);
+        await execFileAsync('git', ['init'], { cwd: noRemoteDir });
+        await execFileAsync('git', ['config', 'user.name', 'Test'], { cwd: noRemoteDir });
+        await execFileAsync('git', ['config', 'user.email', 'test@test.com'], { cwd: noRemoteDir });
+        const noRemoteResult = await getGitRemoteUrl(noRemoteDir);
+        check(
+            'getGitRemoteUrl returns undefined when no remote',
+            noRemoteResult === undefined,
+            `got: ${JSON.stringify(noRemoteResult)}`,
+        );
+
+        // Test 6: getGitRemoteUrl with nested repo path
+        await execFileAsync('git', ['remote', 'set-url', 'origin', 'https://example.com/team/subteam/my-repo.git'], {
+            cwd: tmpDir,
+        });
+        result = await getGitRemoteUrl(tmpDir);
+        check(
+            'getGitRemoteUrl with nested repo path',
+            result !== undefined && result.path === 'team/subteam/my-repo',
+            `got: ${JSON.stringify(result)}`,
+        );
+    } catch (err) {
+        console.error('Error running git tests:', err);
+        failures++;
+    } finally {
+        // Cleanup
+        await rm(tmpDir, { recursive: true, force: true });
+    }
+}
+
+// Run async tests
+await runGitTests();
+
 // ---- summary -------------------------------------------------------------
+
+const pureFunctionTests = rhodeCodeCases.length + hostCases.length + pathCases.length + matchCases.length;
+const integrationTests = 6; // Number of git integration tests
 
 console.log(
     failures === 0
-        ? `\nAll ${rhodeCodeCases.length + hostCases.length + pathCases.length + matchCases.length} gitRemote tests passed`
-        : `\n${failures} test(s) FAILED`,
+        ? `\nAll ${pureFunctionTests + integrationTests} gitRemote tests passed (${pureFunctionTests} pure function + ${integrationTests} integration)`
+        : `\n${failures} test(s) FAILED out of ${testCount}`,
 );
 process.exit(failures === 0 ? 0 : 1);

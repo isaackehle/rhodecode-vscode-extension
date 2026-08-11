@@ -90,6 +90,18 @@
             },
             {
                 "category": "RhodeCode",
+                "command": "rhodecode.openCurrentBranchPr",
+                "icon": "$(git-pull-request)",
+                "title": "Open Pull Request for Current Branch"
+            },
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.createPrForCurrentBranch",
+                "icon": "$(git-pull-request-create)",
+                "title": "Create Pull Request for Current Branch"
+            },
+            {
+                "category": "RhodeCode",
                 "command": "rhodecode.addMessage",
                 "icon": "$(comment)",
                 "title": "Add Message"
@@ -263,5 +275,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.11.0"
+    "version": "0.12.0"
 }
