@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.9.4 - 2026-08-07
+
+- Fix: Add AI agent directories (`.hermes/**`, `.claude/**`, `.agents/**`) and related files (`.secretlintrc.json`,
+  `.clineignore`, `skills-lock.json`) to `.vscodeignore` to prevent vsce's secretlint from encountering symlinks
+  pointing to directories, which caused "EISDIR: illegal operation on a directory, read" errors on Windows during
+  `bun run package`.
+
 ## v0.9.3 - 2026-08-07
 
 - Fix: Add `.gitattributes` file to ensure consistent line endings across platforms and prevent Windows "scanning secrets" errors during build.
