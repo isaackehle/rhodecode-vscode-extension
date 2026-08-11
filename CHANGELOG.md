@@ -1,5 +1,17 @@
 # Change Log
 
+## v0.9.5 - 2026-08-07
+
+- **Fix**: Implement `rhodecode.markHandledPostsComment` setting. When enabled,
+  marking a comment as handled now posts a "Marked as handled" reply comment to
+  the PR thread so the handled state is visible on the RhodeCode server. When
+  disabled (default), handled state is tracked locally only.
+- **Fix**: Remove symlinks from `.claude/skills/` that caused `EISDIR` errors
+  during vsce's secretlint scan on Windows. The symlinks pointed to directories,
+  which caused "error occurred while scanning secrets (files)" errors.
+- **Chore**: Update `.vscodeignore` and `.secretlintrc.json` to explicitly
+  exclude `.claude/skills` directory.
+
 ## v0.9.4 - 2026-08-07
 
 - Fix: Add AI agent directories (`.hermes/**`, `.claude/**`, `.agents/**`) and related files (`.secretlintrc.json`,

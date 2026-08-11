@@ -1,19 +1,4 @@
 {
-    "name": "rhodecode-vscode-extension",
-    "displayName": "RhodeCode",
-    "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "version": "0.9.4",
-    "publisher": "isaackehle",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/isaackehle/rhodecode-vscode-extension.git"
-    },
-    "engines": {
-        "vscode": "^1.80.0"
-    },
-    "categories": [
-        "Other"
-    ],
     "activationEvents": [
         "onView:rhodecode.pullRequests",
         "onCommand:rhodecode.connect",
@@ -30,223 +15,214 @@
         "onCommand:rhodecode.createPullRequest",
         "onCommand:rhodecode.addMessage"
     ],
-    "main": "./out/extension",
-    "icon": "media/rhodecode-icon.png",
+    "categories": [
+        "Other"
+    ],
     "contributes": {
         "commands": [
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.refresh",
-                "title": "Refresh",
-                "category": "RhodeCode",
-                "icon": "$(refresh)"
+                "icon": "$(refresh)",
+                "title": "Refresh"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.showPullRequests",
-                "title": "Show Pull Requests",
-                "category": "RhodeCode",
-                "icon": "$(git-pull-request)"
+                "icon": "$(git-pull-request)",
+                "title": "Show Pull Requests"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.showComments",
-                "title": "Show Comments",
-                "category": "RhodeCode",
-                "icon": "$(comment)"
+                "icon": "$(comment)",
+                "title": "Show Comments"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.replyComment",
-                "title": "Reply to Comment",
-                "category": "RhodeCode",
-                "icon": "$(reply)"
+                "icon": "$(reply)",
+                "title": "Reply to Comment"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.markHandled",
-                "title": "Mark Comment Handled",
-                "category": "RhodeCode",
-                "icon": "$(check)"
+                "icon": "$(check)",
+                "title": "Mark Comment Handled"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.markUnhandled",
-                "title": "Mark Comment Unhandled",
-                "category": "RhodeCode",
-                "icon": "$(circle-outline)"
+                "icon": "$(circle-outline)",
+                "title": "Mark Comment Unhandled"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.createPullRequest",
-                "title": "Create Pull Request",
-                "category": "RhodeCode",
-                "icon": "$(git-pull-request-create)"
+                "icon": "$(git-pull-request-create)",
+                "title": "Create Pull Request"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.openPullRequest",
-                "title": "Open Pull Request in Browser",
-                "category": "RhodeCode",
-                "icon": "$(globe)"
+                "icon": "$(globe)",
+                "title": "Open Pull Request in Browser"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.approveAndMerge",
-                "title": "Approve and Merge",
-                "category": "RhodeCode",
-                "icon": "$(git-merge)"
+                "icon": "$(git-merge)",
+                "title": "Approve and Merge"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.connect",
-                "title": "Connect to RhodeCode…",
-                "category": "RhodeCode",
-                "icon": "$(plug)"
+                "icon": "$(plug)",
+                "title": "Connect to RhodeCode…"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.selectRepository",
-                "title": "Select Repository…",
-                "category": "RhodeCode",
-                "icon": "$(repo)"
+                "icon": "$(repo)",
+                "title": "Select Repository…"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.openChangeset",
-                "title": "Open Changeset in Browser",
-                "category": "RhodeCode",
-                "icon": "$(globe)"
+                "icon": "$(globe)",
+                "title": "Open Changeset in Browser"
             },
             {
+                "category": "RhodeCode",
                 "command": "rhodecode.createPullRequest",
-                "title": "Create Pull Request",
-                "category": "RhodeCode",
-                "icon": "$(git-pull-request-create)"
+                "icon": "$(git-pull-request-create)",
+                "title": "Create Pull Request"
             },
             {
-                "command": "rhodecode.addMessage",
-                "title": "Add Message",
                 "category": "RhodeCode",
-                "icon": "$(comment)"
+                "command": "rhodecode.addMessage",
+                "icon": "$(comment)",
+                "title": "Add Message"
             }
         ],
-        "viewsContainers": {
-            "activitybar": [
+        "configuration": [
+            {
+                "properties": {
+                    "rhodecode.apikey": {
+                        "default": "",
+                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard. Ignored when 'API Key From Environment File' is enabled.",
+                        "title": "API Key",
+                        "type": "string",
+                        "when": "rhodecode.apikeyFromEnv != true"
+                    },
+                    "rhodecode.apikeyFromEnv": {
+                        "default": false,
+                        "description": "Read RHODECODE_API_KEY from a .env file (workspace .env first, then ~/.env) instead of the rhodecode.apikey setting. When enabled, rhodecode.apikey is ignored so the key can stay out of a repo's .vscode/settings.",
+                        "title": "API Key From Environment File",
+                        "type": "boolean"
+                    },
+                    "rhodecode.markHandledPostsComment": {
+                        "default": false,
+                        "description": "Also post a \"Marked as handled\" reply comment on the PR thread when you mark a comment handled. When disabled, handled state is tracked locally only.",
+                        "title": "Mark Handled Posts Comment",
+                        "type": "boolean"
+                    },
+                    "rhodecode.serverurl": {
+                        "default": "",
+                        "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard.",
+                        "title": "Server URL",
+                        "type": "string"
+                    }
+                },
+                "title": "RhodeCode Configuration"
+            }
+        ],
+        "menus": {
+            "editor/context": [
                 {
-                    "id": "rhodecode",
-                    "title": "RhodeCode",
-                    "icon": "media/rhodecode-icon.svg"
+                    "command": "rhodecode.addMessage",
+                    "group": "navigation",
+                    "when": "editorFocus"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "rhodecode.showComments",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest"
+                },
+                {
+                    "command": "rhodecode.openPullRequest",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest"
+                },
+                {
+                    "command": "rhodecode.approveAndMerge",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest"
+                },
+                {
+                    "command": "rhodecode.openChangeset",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "rhodecode.refresh",
+                    "group": "navigation",
+                    "when": "view == rhodecode.pullRequests"
+                },
+                {
+                    "command": "rhodecode.showPullRequests",
+                    "group": "navigation",
+                    "when": "view == rhodecode.pullRequests"
+                },
+                {
+                    "command": "rhodecode.connect",
+                    "group": "navigation@2",
+                    "when": "view == rhodecode.pullRequests"
+                },
+                {
+                    "command": "rhodecode.selectRepository",
+                    "group": "navigation@3",
+                    "when": "view == rhodecode.pullRequests"
                 }
             ]
         },
         "views": {
             "rhodecode": [
                 {
+                    "icon": "media/rhodecode-icon.svg",
                     "id": "rhodecode.pullRequests",
-                    "name": "Pull Requests",
-                    "icon": "media/rhodecode-icon.svg"
+                    "name": "Pull Requests"
                 }
             ]
         },
-        "menus": {
-            "view/title": [
+        "viewsContainers": {
+            "activitybar": [
                 {
-                    "command": "rhodecode.refresh",
-                    "when": "view == rhodecode.pullRequests",
-                    "group": "navigation"
-                },
-                {
-                    "command": "rhodecode.showPullRequests",
-                    "when": "view == rhodecode.pullRequests",
-                    "group": "navigation"
-                },
-                {
-                    "command": "rhodecode.connect",
-                    "when": "view == rhodecode.pullRequests",
-                    "group": "navigation@2"
-                },
-                {
-                    "command": "rhodecode.selectRepository",
-                    "when": "view == rhodecode.pullRequests",
-                    "group": "navigation@3"
-                }
-            ],
-            "view/item/context": [
-                {
-                    "command": "rhodecode.showComments",
-                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
-                    "group": "inline"
-                },
-                {
-                    "command": "rhodecode.openPullRequest",
-                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
-                    "group": "inline"
-                },
-                {
-                    "command": "rhodecode.approveAndMerge",
-                    "when": "view == rhodecode.pullRequests && viewItem == pullrequest",
-                    "group": "inline"
-                },
-                {
-                    "command": "rhodecode.openChangeset",
-                    "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/",
-                    "group": "inline"
-                }
-            ],
-            "editor/context": [
-                {
-                    "command": "rhodecode.addMessage",
-                    "when": "editorFocus",
-                    "group": "navigation"
+                    "icon": "media/rhodecode-icon.svg",
+                    "id": "rhodecode",
+                    "title": "RhodeCode"
                 }
             ]
         },
         "viewsWelcome": [
             {
-                "view": "rhodecode.pullRequests",
                 "contents": "Connect to your RhodeCode server to browse repositories, branches and pull requests.\n\n[Set up connection…](command:rhodecode.connect)\n[Open Settings](command:workbench.action.openSettings?%5B%22rhodecode.serverurl%22%5D)",
+                "view": "rhodecode.pullRequests",
                 "when": "view == rhodecode.pullRequests && !config.rhodecode.serverurl"
-            }
-        ],
-        "configuration": [
-            {
-                "title": "RhodeCode Configuration",
-                "properties": {
-                    "rhodecode.serverurl": {
-                        "title": "Server URL",
-                        "type": "string",
-                        "default": "",
-                        "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard."
-                    },
-                                        "rhodecode.apikey": {
-                        "title": "API Key",
-                        "type": "string",
-                        "default": "",
-                        "description": "RhodeCode API key, found in your user profile on the server (My Account → Auth Tokens). Set automatically by the Connect wizard. Ignored when 'API Key From Environment File' is enabled.",
-                        "when": "rhodecode.apikeyFromEnv != true"
-                    },
-                    "rhodecode.apikeyFromEnv": {
-                        "title": "API Key From Environment File",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Read RHODECODE_API_KEY from a .env file (workspace .env first, then ~/.env) instead of the rhodecode.apikey setting. When enabled, rhodecode.apikey is ignored so the key can stay out of a repo's .vscode/settings."
-                    },
-                    "rhodecode.markHandledPostsComment": {
-                        "title": "Mark Handled Posts Comment",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Also post a \"Marked as handled\" reply comment on the PR thread when you mark a comment handled. When disabled, handled state is tracked locally only."
-                    }
-                }
             }
         ]
     },
-    "scripts": {
-        "vscode:prepublish": "bun run compile",
-        "prepackage": "bun run test",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "test": "bun run scripts/run-tests.cjs",
-        "test:integration": "node out/test/runTests.js",
-        "test:unit": "bun test",
-        "package": "vsce package --no-dependencies",
-        "lint": "oxlint src",
-        "lint:md": "rumdl check .",
-        "format": "oxfmt --write \"src/**/*.ts\"",
-        "format:check": "oxfmt --check \"src/**/*.ts\"",
-        "format:md": "rumdl fmt .",
-        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete",
-        "release": "./scripts/release.sh"
+    "dependencies": {
+        "@types/glob": "^9.0.0",
+        "@types/mocha": "^10.0.10",
+        "glob": "^13.0.6",
+        "mocha": "^11.8.0"
     },
+    "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
     "devDependencies": {
         "@types/node": "^20.11.0",
         "@types/vscode": "^1.80.0",
@@ -257,10 +233,34 @@
         "typescript": "^5.4.0",
         "vscode-test": "^1.6.1"
     },
-    "dependencies": {
-        "@types/glob": "^9.0.0",
-        "@types/mocha": "^10.0.10",
-        "glob": "^13.0.6",
-        "mocha": "^11.8.0"
-    }
+    "displayName": "RhodeCode",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "icon": "media/rhodecode-icon.png",
+    "main": "./out/extension",
+    "name": "rhodecode-vscode-extension",
+    "publisher": "isaackehle",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/isaackehle/rhodecode-vscode-extension.git"
+    },
+    "scripts": {
+        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete",
+        "compile": "tsc -p ./",
+        "format": "oxfmt --write \"src/**/*.ts\"",
+        "format:check": "oxfmt --check \"src/**/*.ts\"",
+        "format:md": "rumdl fmt .",
+        "lint": "oxlint src",
+        "lint:md": "rumdl check .",
+        "package": "vsce package --no-dependencies",
+        "prepackage": "bun run test",
+        "release": "./scripts/release.sh",
+        "test": "bun run scripts/run-tests.cjs",
+        "test:integration": "node out/test/runTests.js",
+        "test:unit": "bun test",
+        "vscode:prepublish": "bun run compile",
+        "watch": "tsc -watch -p ./"
+    },
+    "version": "0.9.5"
 }
