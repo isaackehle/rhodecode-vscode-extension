@@ -250,7 +250,9 @@ export function registerCommands(
             }
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
-                vscode.window.showInformationMessage('No active editor. Open a file from the pull request to add a message.');
+                vscode.window.showInformationMessage(
+                    'No active editor. Open a file from the pull request to add a message.',
+                );
                 return;
             }
             const pr = await pickPullRequest(client);
