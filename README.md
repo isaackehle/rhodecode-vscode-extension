@@ -112,6 +112,7 @@ bun install
 bun run compile      # tsc -> out/
 bun run lint         # oxlint src
 bun run format       # oxfmt (write) src
+bun run test         # run tests
 bun run package      # vsce package -> .vsix
 bun run clean        # remove out/, .vscode-test/, .rumdl_cache/, and *.vsix
 ```
