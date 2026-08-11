@@ -243,6 +243,40 @@ export function registerCommands(
             );
         }),
 
+        vscode.commands.registerCommand('rhodecode.addMessage', async () => {
+            const client = getClient();
+            if (!client) {
+                return;
+            }
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showInformationMessage('No active editor. Open a file from the pull request to add a message.');
+                return;
+            }
+            const pr = await pickPullRequest(client);
+            if (!pr) {
+                return;
+            }
+            const line = editor.selection.active.line + 1;
+            const filePath = editor.document.fileName;
+            const message = await vscode.window.showInputBox({
+                prompt: `Add a message to line ${line} in ${filePath} on PR #${pr.pull_request_id}`,
+                placeHolder: 'Your message',
+            });
+            if (!message) {
+                return;
+            }
+            try {
+                // Use commentOnPullRequest with line number info in the message
+                const fullMessage = `@line:${line} ${message}`;
+                await client.commentOnPullRequest(pr.pull_request_id, fullMessage);
+                await tree.invalidateComments(pr);
+                vscode.window.showInformationMessage('Message added.');
+            } catch (err) {
+                reportError('add message', err);
+            }
+        }),
+
         vscode.commands.registerCommand('rhodecode.createPullRequest', async () => {
             const client = getClient();
             if (!client) {

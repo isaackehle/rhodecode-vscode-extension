@@ -3,7 +3,6 @@ import { RhodeCodeClient, reportError } from './rhodecoderequest';
 import { PullRequestCommentData, RhodeCodePullRequest } from './model/rhodecode';
 import { parsePullRequestComments } from './commentParser';
 import { PullRequestTreeProvider } from './pullRequestTreeProvider';
-import { getMarkHandledPostsComment } from './configuration';
 import { getRepoIdRaw } from './repoState';
 
 interface DisplayComment {
@@ -15,6 +14,7 @@ interface DisplayComment {
     resolved: boolean;
     statusLabel: string | null;
     location: string | null; // file:line for inline comments
+    lineNumber: number | null; // extracted from @line:X prefix
 }
 
 /**
@@ -108,9 +108,6 @@ export class CommentViewProvider {
                     }
                     const handled = this.tree.store.isHandled(repoId, this.pr.pull_request_id, message.commentId);
                     this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, !handled);
-                    if (!handled && getMarkHandledPostsComment()) {
-                        await client.commentOnPullRequest(this.pr.pull_request_id, 'Marked as handled ✔');
-                    }
                     await this.render();
                     break;
                 }
@@ -140,6 +137,7 @@ export class CommentViewProvider {
                 resolved: c.resolved,
                 statusLabel: c.statusChange,
                 location: null,
+                lineNumber: null,
             }));
         }
     }
@@ -194,6 +192,7 @@ h2 { font-size: 1.1rem; margin-bottom: .3rem; }
 .badge.todo { background: var(--vscode-charts-yellow, #d7a700); color: #1e1e1e; font-weight: 600; }
 .badge.resolved { background: var(--vscode-charts-green, #4a8f4a); color: #fff; }
 .badge.handled { background: var(--vscode-charts-green, #4a8f4a); color: #fff; }
+.badge.line { background: var(--vscode-charts-blue, #007acc); color: #fff; }
 .location { font-size: .75rem; color: var(--vscode-descriptionForeground); font-style: italic; }
 .text { white-space: pre-wrap; margin-top: .25rem; }
 .actions { margin-top: .5rem; }
@@ -260,6 +259,7 @@ ${rows}
         const handledBadge = handled ? '<span class="badge handled">handled</span>' : '';
         const statusBadge = comment.statusLabel ? `<span class="badge">${escapeHtml(comment.statusLabel)}</span>` : '';
         const location = comment.location ? `<div class="location">${escapeHtml(comment.location)}</div>` : '';
+        const lineBadge = comment.lineNumber ? `<span class="badge line">line ${comment.lineNumber}</span>` : '';
 
         let actions = '';
         if (comment.isTodo && !comment.resolved) {
@@ -278,6 +278,7 @@ ${rows}
     ${typeBadge}
     ${statusBadge}
     ${handledBadge}
+    ${lineBadge}
   </div>
   ${location}
   <div class="text">${escapeHtml(comment.text)}</div>
@@ -298,6 +299,13 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
     const resolved = Boolean(c.comment_resolved_by);
     const statusLabel = c.comment_status && 'status_lbl' in c.comment_status ? c.comment_status.status_lbl : null;
     const location = c.comment_f_path ? `${c.comment_f_path}${c.comment_lineno ? ':' + c.comment_lineno : ''}` : null;
+    
+    // Extract line number from message if it starts with @line:X
+    let lineNumber: number | null = null;
+    const lineMatch = c.comment_text.match(/^@line:(\d+)\s+/);
+    if (lineMatch) {
+        lineNumber = parseInt(lineMatch[1], 10);
+    }
 
     return {
         id: String(c.comment_id),
@@ -308,6 +316,7 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
         resolved,
         statusLabel,
         location,
+        lineNumber,
     };
 }
 
