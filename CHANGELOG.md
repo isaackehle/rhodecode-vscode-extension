@@ -8,6 +8,11 @@
 - Feat: When `apikeyFromEnv` is enabled and no env-file key is found, show a clear error message instead of falling back to the setting or prompting.
 - Feat: Connect wizard detects env-file keys and allows keeping or overriding them for the session only (typed keys are not persisted to settings).
 - Chore: Add `prepackage` script that runs tests before packaging to ensure releases only pass when all tests succeed.
+- Test: Add `scripts/test-configuration.cjs` — 14 stub-based unit tests for `normalizeServerUrl`,
+  `isApiKeyFromEnvEnabled`, and `getApiKeyRaw`. `bun run test` now runs 43 tests total.
+- Test: Add `@vscode/test-electron` integration harness (`src/test/`). `bun run test:integration` boots a real VS Code
+  instance and runs 21 tests: extension activation, command registration, configuration schema defaults, and
+  `apikeyFromEnv` setting behaviour end-to-end.
 
 ## 0.8.1 - 2026-08-05
 

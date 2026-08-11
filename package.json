@@ -214,7 +214,8 @@
         "prepackage": "bun run test",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "test": "bun run scripts/test-envfile.ts && node scripts/test-extension-load.cjs",
+        "test": "bun run scripts/test-envfile.ts && node scripts/test-extension-load.cjs && node scripts/test-configuration.cjs",
+        "test:integration": "node out/test/runTests.js",
         "package": "vsce package --no-dependencies",
         "lint": "oxlint src",
         "lint:md": "rumdl check .",
@@ -225,9 +226,17 @@
     "devDependencies": {
         "@types/node": "^20.11.0",
         "@types/vscode": "^1.80.0",
+        "@vscode/test-electron": "^3.1.0",
         "@vscode/vsce": "^2.24.0",
         "oxfmt": "^0.62.0",
         "oxlint": "^1.77.0",
-        "typescript": "^5.4.0"
+        "typescript": "^5.4.0",
+        "vscode-test": "^1.6.1"
+    },
+    "dependencies": {
+        "@types/glob": "^9.0.0",
+        "@types/mocha": "^10.0.10",
+        "glob": "^13.0.6",
+        "mocha": "^11.8.0"
     }
 }
