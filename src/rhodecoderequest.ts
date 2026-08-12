@@ -1,6 +1,7 @@
 import { window } from 'vscode';
 import * as config from './configuration';
 import { getRepoIdRaw } from './repoState';
+import { debugLog } from './extension';
 import {
     CommentResult,
     PullRequestCommentData,
@@ -50,6 +51,7 @@ export class RhodeCodeClient {
     }
 
     private async post<T>(method: string, args: Record<string, unknown>): Promise<RhodeCodeResponse<T>> {
+        debugLog(`API CALL: ${method} with args: ${JSON.stringify(args)}`);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 30000);
         let response: Response;
@@ -66,15 +68,25 @@ export class RhodeCodeClient {
                 signal: controller.signal,
             });
         } catch (err) {
+            debugLog(`API ERROR (${method}): ${err instanceof Error ? err.message : String(err)}`);
             throw new Error(`RhodeCode API request failed: ${err instanceof Error ? err.message : String(err)}`);
         } finally {
             clearTimeout(timer);
         }
 
         if (response.status !== 200) {
-            throw new Error(`RhodeCode API returned HTTP ${response.status}`);
+            const error = `RhodeCode API returned HTTP ${response.status}`;
+            debugLog(`API ERROR (${method}): ${error}`);
+            throw new Error(error);
         }
-        return (await response.json()) as RhodeCodeResponse<T>;
+
+        const result = (await response.json()) as RhodeCodeResponse<T>;
+        if (result.error) {
+            debugLog(`API ERROR (${method}): ${JSON.stringify(result.error)}`);
+        } else {
+            debugLog(`API RESPONSE (${method}): success, result type: ${typeof result.result}`);
+        }
+        return result;
     }
 
     async getPullRequests(status: 'new' | 'open' | 'closed' = 'new'): Promise<RhodeCodePullRequest[]> {

@@ -8,6 +8,7 @@ import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration
 import { setStoredRepo } from './repoState';
 import { getCurrentBranch } from './gitRemote';
 import { RepoBrowserPanel } from './repoBrowserPanel';
+import { debugOutputChannel } from './extension';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -39,6 +40,14 @@ export function registerCommands(
                 await refreshAll();
             } catch (err) {
                 reportError('connect', err);
+            }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.openDebugOutput', async () => {
+            if (debugOutputChannel) {
+                debugOutputChannel.show(true);
+            } else {
+                vscode.window.showInformationMessage('RhodeCode debug output channel not available yet.');
             }
         }),
 

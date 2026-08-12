@@ -66,6 +66,12 @@
             },
             {
                 "category": "RhodeCode",
+                "command": "rhodecode.openDebugOutput",
+                "icon": "$(output)",
+                "title": "Show Debug Output"
+            },
+            {
+                "category": "RhodeCode",
                 "command": "rhodecode.selectRepository",
                 "icon": "$(repo)",
                 "title": "Select Repository…"
@@ -152,6 +158,12 @@
                         "description": "RhodeCode server URL (e.g. https://rhodecode.example.com). Set automatically by the Connect wizard.",
                         "title": "Server URL",
                         "type": "string"
+                    },
+                    "rhodecode.debug": {
+                        "default": false,
+                        "description": "Enable debug logging to the RhodeCode output channel (View → Output → RhodeCode). Useful for troubleshooting connection and API issues.",
+                        "title": "Debug Logging",
+                        "type": "boolean"
                     }
                 },
                 "title": "RhodeCode Configuration"
@@ -235,7 +247,7 @@
         },
         "viewsWelcome": [
             {
-                "contents": "Connect to your RhodeCode server to browse repositories, branches and pull requests.\n\n[Set up connection…](command:rhodecode.connect)\n[Open Settings](command:workbench.action.openSettings?%5B%22rhodecode.serverurl%22%5D)",
+                "contents": "Connect to your RhodeCode server to browse repositories, branches and pull requests.\n\n[Set up connection…](command:rhodecode.connect)\n[Open Settings](command:workbench.action.openSettings?%5B%22rhodecode.serverurl%22%5D)\n\n**Need help?**\n- Open the [Debug Output](command:rhodecode.openDebugOutput) to see what's happening\n- Check the [Settings](command:workbench.action.openSettings?%5B%22rhodecode.serverurl%22%5D) for configuration options",
                 "view": "rhodecode.pullRequests",
                 "when": "view == rhodecode.pullRequests && !config.rhodecode.serverurl"
             }
@@ -285,5 +297,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.14.0"
+    "version": "0.15.0"
 }

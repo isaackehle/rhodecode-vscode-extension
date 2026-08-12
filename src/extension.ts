@@ -12,6 +12,29 @@ import { RepoInfo } from './model/rhodecode';
 import { PRStatusBar } from './prStatusBar';
 import { execSync } from 'child_process';
 
+/** Debug output channel for the extension */
+export let debugOutputChannel: vscode.OutputChannel | undefined;
+
+/**
+ * Log a message to the debug output channel if debug logging is enabled.
+ * This is useful for troubleshooting connection issues, API calls, etc.
+ */
+export function debugLog(message: string): void {
+    if (debugOutputChannel && vscode.workspace.getConfiguration('rhodecode').get<boolean>('debug', false)) {
+        debugOutputChannel.appendLine(message);
+    }
+}
+
+/**
+ * Log a message to the debug output channel regardless of settings.
+ * Use this for critical events like activation.
+ */
+export function alwaysLog(message: string): void {
+    if (debugOutputChannel) {
+        debugOutputChannel.appendLine(message);
+    }
+}
+
 /** Branches that never get their own pull request, so the push tip is skipped for them. */
 const DEFAULT_BRANCH_NAMES = new Set(['master', 'main', 'trunk']);
 
@@ -66,14 +89,15 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
     const repo = getRepoIdRaw();
     if (!server) {
         item.text = '$(plug) RhodeCode: not connected';
-        item.tooltip = 'Click to set up your RhodeCode connection (server address + API key)';
+        item.tooltip =
+            'Click to set up your RhodeCode connection (server address + API key)\nOr open the View → Output → RhodeCode to see debug logs';
         item.command = 'rhodecode.connect';
         item.show();
         return;
     }
     if (!repo) {
-        item.text = '$(plug) RhodeCode: pick a repository';
-        item.tooltip = `Connected to ${server} — click to select a repository`;
+        item.text = '$(repo) RhodeCode: select repository';
+        item.tooltip = `Connected to ${server}\nClick to select a repository from your server\nOr open View → Output → RhodeCode to see debug logs`;
         item.command = 'rhodecode.selectRepository';
         item.show();
         return;
@@ -180,6 +204,13 @@ export async function autoDetectRepository(client: RhodeCodeClient): Promise<Rep
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+    // Create debug output channel
+    debugOutputChannel = vscode.window.createOutputChannel('RhodeCode', 'rhodecode');
+    context.subscriptions.push(debugOutputChannel);
+
+    alwaysLog('=== RhodeCode Extension Activated ===');
+    alwaysLog(`Version: ${context.extension.packageJSON.version}`);
+
     const store = new HandledStore(context.workspaceState);
     initRepoState(context.workspaceState);
 
@@ -218,6 +249,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {
             if (e.affectsConfiguration('rhodecode')) {
+                alwaysLog('Configuration changed, rebuilding client...');
                 // Rebuild from config so the wizard-persisted values take
                 // effect even when this event fires after setClient().
                 client = await RhodeCodeClient.create().catch(() => undefined);
@@ -239,23 +271,38 @@ export function activate(context: vscode.ExtensionContext): void {
     // Kick off an initial load so the view is populated when configured.
     void (async () => {
         try {
+            alwaysLog('Starting initial load...');
+            alwaysLog(`Server URL configured: ${getServerUrlRaw() ? 'yes' : 'no'}`);
+            alwaysLog(`Repository selected: ${getRepoIdRaw() || 'no'}`);
+
             // Check for RhodeCode repo on initial activation
             await checkAndPromptForRhodeCode();
 
+            alwaysLog('Attempting to create client...');
             client = await RhodeCodeClient.create();
+
+            if (client) {
+                alwaysLog(`Client created successfully for repo: ${client.getApiKey()}`);
+            }
+
             // If no repo is selected yet, try git-remote auto-detection.
             // get_repos needs no repo id, so a fresh client suffices.
             if (!client && getServerUrlRaw() && !getStoredRepo()) {
+                alwaysLog('No client yet, attempting detection mode...');
                 const detectClient = await RhodeCodeClient.createForDetection();
                 if (detectClient) {
                     await autoDetectRepository(detectClient);
                 }
             }
+
             client = await RhodeCodeClient.create().catch(() => undefined);
             if (client && tree) {
+                alwaysLog('Loading pull requests...');
                 await tree.load();
+                alwaysLog('Pull requests loaded successfully');
             }
         } catch (err) {
+            alwaysLog(`Initial load error: ${err instanceof Error ? err.message : String(err)}`);
             reportError('load', err);
         }
         updateStatusBar(statusBar);
