@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { RhodeCodeClient } from './rhodecoderequest';
 import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rhodecode';
 import { HandledStore } from './handledStore';
-import { setStoredRepo } from './repoState';
+import { setStoredRepo, getStoredRepo } from './repoState';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
@@ -167,6 +167,28 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             if (!this.getClient()) {
                 return [];
             }
+
+            // Check if a repository is selected
+            const selectedRepo = getStoredRepo();
+
+            if (!selectedRepo) {
+                // No repo selected - show a message to select one
+                const selectRepoItem = new vscode.TreeItem(
+                    'Select a repository to get started',
+                    vscode.TreeItemCollapsibleState.None,
+                );
+                selectRepoItem.id = 'select-repo';
+                selectRepoItem.contextValue = 'select-repo';
+                selectRepoItem.description = 'Click to open repository picker';
+                selectRepoItem.iconPath = new vscode.ThemeIcon('warning');
+                selectRepoItem.command = {
+                    command: 'rhodecode.selectRepository',
+                    title: 'Select Repository',
+                };
+                return [selectRepoItem];
+            }
+
+            // Repo is selected - show all sections
             return [
                 new SectionItem('groups', 'Groups', 'symbol-folder', 'Click to filter repositories'),
                 new SectionItem('repos', 'Repositories', 'repo', 'Filtered by selected groups'),
