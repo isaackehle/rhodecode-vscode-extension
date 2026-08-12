@@ -27,11 +27,13 @@ export class SectionItem extends vscode.TreeItem {
         public readonly sectionId: string,
         label: string,
         icon: string,
+        description?: string,
     ) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed);
         this.id = `section-${sectionId}`;
         this.contextValue = 'section';
         this.iconPath = new vscode.ThemeIcon(icon);
+        this.description = description;
     }
 }
 
@@ -166,8 +168,8 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 return [];
             }
             return [
-                new SectionItem('groups', 'Groups', 'symbol-folder'),
-                new SectionItem('repos', 'Repositories', 'repo'),
+                new SectionItem('groups', 'Groups', 'symbol-folder', 'Click to filter repositories'),
+                new SectionItem('repos', 'Repositories', 'repo', 'Filtered by selected groups'),
                 new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
                 new SectionItem('branches', 'Branches', 'git-branch'),
                 new SectionItem('tags', 'Tags', 'tag'),

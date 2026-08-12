@@ -10,7 +10,6 @@ import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost }
 import { watchForPushes } from './pushWatcher';
 import { RepoInfo } from './model/rhodecode';
 import { PRStatusBar } from './prStatusBar';
-import { execSync } from 'child_process';
 
 /** Debug output channel for the extension */
 export let debugOutputChannel: vscode.OutputChannel | undefined;
@@ -103,22 +102,9 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
         return;
     }
     const label = getRepoLabel();
-    // Get the git remote URL for display
-    const folder = vscode.workspace.workspaceFolders?.[0];
-    let remoteUrl = '';
-    if (folder) {
-        try {
-            remoteUrl = execSync(`git --git-dir="${folder.uri.fsPath}/.git" config --get remote.origin.url`, {
-                encoding: 'utf8',
-            }).trim();
-        } catch {
-            // Ignore errors getting remote URL
-        }
-    }
-    // Show remote URL in status bar if available, otherwise show repo name
-    const displayText = remoteUrl ? `$(repo) ${remoteUrl}` : `$(repo) RhodeCode: ${repo}`;
-    item.text = displayText;
-    item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nRemote: ${remoteUrl || 'N/A'}\nClick to switch repository`;
+    // Show server URL in status bar (cleaner display, issue #18)
+    item.text = `$(server) ${server}`;
+    item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nClick to switch repository`;
     item.command = 'rhodecode.selectRepository';
     item.show();
 }
@@ -225,6 +211,13 @@ export function activate(context: vscode.ExtensionContext): void {
     });
     context.subscriptions.push(treeView);
     context.subscriptions.push(prStatusBar);
+
+    // Auto-refresh tree view when it becomes visible (issue #19)
+    treeView.onDidChangeVisibility(async () => {
+        if (treeView.visible) {
+            await tree?.load();
+        }
+    });
 
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBar);
