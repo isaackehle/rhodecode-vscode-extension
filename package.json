@@ -226,7 +226,8 @@
                 {
                     "icon": "media/rhodecode-icon.svg",
                     "id": "rhodecode.pullRequests",
-                    "name": "Pull Requests"
+                    "name": "RhodeCode",
+                    "description": "Browse repositories, groups, branches, and pull requests"
                 }
             ]
         },

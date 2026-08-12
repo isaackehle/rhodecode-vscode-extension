@@ -189,7 +189,7 @@ export async function autoDetectRepository(client: RhodeCodeClient): Promise<Rep
     return undefined;
 }
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // Create debug output channel
     debugOutputChannel = vscode.window.createOutputChannel('RhodeCode', 'rhodecode');
     context.subscriptions.push(debugOutputChannel);
@@ -212,12 +212,15 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(treeView);
     context.subscriptions.push(prStatusBar);
 
-    // Auto-refresh tree view when it becomes visible (issue #19)
+    // Auto-load tree view when it becomes visible (issue #19)
     treeView.onDidChangeVisibility(async () => {
         if (treeView.visible) {
             await tree?.load();
         }
     });
+
+    // Initial load when extension activates
+    await tree?.load();
 
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     context.subscriptions.push(statusBar);
