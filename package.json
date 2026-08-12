@@ -105,6 +105,18 @@
                 "command": "rhodecode.addMessage",
                 "icon": "$(comment)",
                 "title": "Add Message"
+            },
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.toggleGroup",
+                "icon": "$(check)",
+                "title": "Toggle Group Filter"
+            },
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.selectRepoFromTree",
+                "icon": "$(repo)",
+                "title": "Select Repository"
             }
         ],
         "configuration": [
@@ -273,5 +285,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.13.0"
+    "version": "0.14.0"
 }

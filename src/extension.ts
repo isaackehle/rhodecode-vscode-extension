@@ -10,6 +10,7 @@ import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost }
 import { watchForPushes } from './pushWatcher';
 import { RepoInfo } from './model/rhodecode';
 import { PRStatusBar } from './prStatusBar';
+import { execSync } from 'child_process';
 
 /** Branches that never get their own pull request, so the push tip is skipped for them. */
 const DEFAULT_BRANCH_NAMES = new Set(['master', 'main', 'trunk']);
@@ -78,8 +79,22 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
         return;
     }
     const label = getRepoLabel();
-    item.text = '$(repo) RhodeCode: ' + repo;
-    item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nClick to switch repository`;
+    // Get the git remote URL for display
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    let remoteUrl = '';
+    if (folder) {
+        try {
+            remoteUrl = execSync(`git --git-dir="${folder.uri.fsPath}/.git" config --get remote.origin.url`, {
+                encoding: 'utf8',
+            }).trim();
+        } catch {
+            // Ignore errors getting remote URL
+        }
+    }
+    // Show remote URL in status bar if available, otherwise show repo name
+    const displayText = remoteUrl ? `$(repo) ${remoteUrl}` : `$(repo) RhodeCode: ${repo}`;
+    item.text = displayText;
+    item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nRemote: ${remoteUrl || 'N/A'}\nClick to switch repository`;
     item.command = 'rhodecode.selectRepository';
     item.show();
 }

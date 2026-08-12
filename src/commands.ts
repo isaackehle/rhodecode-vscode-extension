@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { RhodeCodeClient, reportError } from './rhodecoderequest';
 import { RhodeCodePullRequest } from './model/rhodecode';
-import { PullRequestItem, PullRequestTreeProvider } from './pullRequestTreeProvider';
+import { PullRequestItem, PullRequestTreeProvider, GroupItem, RepoItem } from './pullRequestTreeProvider';
 import { CommentViewProvider } from './commentViewProvider';
 import { setupConnection, browseRepositories } from './serverSetup';
 import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
@@ -65,6 +65,32 @@ export function registerCommands(
                 await refreshAll();
             } catch (err) {
                 reportError('select repository', err);
+            }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.toggleGroup', async (item: GroupItem) => {
+            if (!tree) {
+                return;
+            }
+            tree.toggleGroupSelection(item.group.group_id);
+        }),
+
+        vscode.commands.registerCommand('rhodecode.selectRepoFromTree', async (item: RepoItem) => {
+            if (!tree) {
+                return;
+            }
+            try {
+                const client = getClient();
+                if (!client) {
+                    return;
+                }
+                await setStoredRepo(item.repo);
+                // Rebuild the client so it points at the newly chosen repo.
+                setClient(new RhodeCodeClient(client.getServerUrl(), client.getApiKey(), item.repo.repo_name));
+                await refreshAll();
+                vscode.window.showInformationMessage(`Selected repository "${item.repo.repo_name}"`);
+            } catch (err) {
+                reportError('select repo from tree', err);
             }
         }),
 

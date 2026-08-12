@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { RhodeCodeClient } from './rhodecoderequest';
-import { RepoRefs, RhodeCodePullRequest } from './model/rhodecode';
+import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rhodecode';
 import { HandledStore } from './handledStore';
+import { setStoredRepo } from './repoState';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
@@ -55,6 +56,43 @@ export class RefItem extends vscode.TreeItem {
     }
 }
 
+/** A group header in the groups pane. */
+export class GroupItem extends vscode.TreeItem {
+    constructor(
+        public readonly group: RepoGroup,
+        public readonly isSelected: boolean,
+    ) {
+        super(group.group_name, vscode.TreeItemCollapsibleState.None);
+        this.id = `group-${group.group_id}`;
+        this.contextValue = 'group';
+        this.description = isSelected ? '✓' : '';
+        this.tooltip = `Group: ${group.group_name}\n${isSelected ? 'Selected' : 'Click to filter repos'}`;
+        this.iconPath = new vscode.ThemeIcon('symbol-folder');
+        this.command = {
+            command: 'rhodecode.toggleGroup',
+            title: 'Toggle Group',
+            arguments: [this],
+        };
+    }
+}
+
+/** A repository item in the repos pane. */
+export class RepoItem extends vscode.TreeItem {
+    constructor(public readonly repo: RepoInfo) {
+        super(repo.repo_name, vscode.TreeItemCollapsibleState.None);
+        this.id = `repo-${repo.repo_id}`;
+        this.contextValue = 'repo';
+        this.description = repo.repo_type;
+        this.tooltip = `Repository: ${repo.repo_name}\nType: ${repo.repo_type}\nClone URI: ${repo.clone_uri || 'N/A'}`;
+        this.iconPath = new vscode.ThemeIcon('repo');
+        this.command = {
+            command: 'rhodecode.selectRepoFromTree',
+            title: 'Select Repository',
+            arguments: [this],
+        };
+    }
+}
+
 function reviewStatusIcon(status: string): string {
     switch (status) {
         case 'approved':
@@ -75,6 +113,9 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private pullRequests: RhodeCodePullRequest[] = [];
     private refs: RepoRefs | undefined;
     private _comments: Map<string, string> = new Map(); // prId -> page html
+    private groups: RepoGroup[] = [];
+    private repos: RepoInfo[] = [];
+    private selectedGroups: Set<string> = new Set();
 
     constructor(
         private readonly getClient: () => RhodeCodeClient | undefined,
@@ -85,6 +126,9 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         this.pullRequests = [];
         this.refs = undefined;
         this._comments.clear();
+        this.groups = [];
+        this.repos = [];
+        this.selectedGroups.clear();
         this._onDidChangeTreeData.fire();
     }
 
@@ -99,6 +143,13 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             this.refs = await client.getRepoRefs();
         } catch {
             this.refs = undefined;
+        }
+        // Load groups and repos for the left panel
+        try {
+            [this.groups, this.repos] = await Promise.all([client.getRepoGroups(), client.getRepos()]);
+        } catch {
+            this.groups = [];
+            this.repos = [];
         }
         this._onDidChangeTreeData.fire();
     }
@@ -115,6 +166,8 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 return [];
             }
             return [
+                new SectionItem('groups', 'Groups', 'symbol-folder'),
+                new SectionItem('repos', 'Repositories', 'repo'),
                 new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
                 new SectionItem('branches', 'Branches', 'git-branch'),
                 new SectionItem('tags', 'Tags', 'tag'),
@@ -123,6 +176,25 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
         if (element instanceof SectionItem) {
             switch (element.sectionId) {
+                case 'groups':
+                    return this.groups
+                        .sort((a, b) => a.group_name.localeCompare(b.group_name))
+                        .map((group) => new GroupItem(group, this.selectedGroups.has(String(group.group_id))));
+                case 'repos': {
+                    // Filter repos based on selected groups
+                    let filteredRepos = this.repos;
+                    if (this.selectedGroups.size > 0) {
+                        // Since RepoInfo doesn't have a direct group reference,
+                        // we filter by matching the owner field with group names
+                        filteredRepos = this.repos.filter((repo) => {
+                            const owner = repo.owner || '';
+                            return this.selectedGroups.has(owner);
+                        });
+                    }
+                    return filteredRepos
+                        .sort((a, b) => a.repo_name.localeCompare(b.repo_name))
+                        .map((repo) => new RepoItem(repo));
+                }
                 case 'pullrequests':
                     return this.pullRequests.map((pr) => new PullRequestItem(pr));
                 case 'branches': {
@@ -161,5 +233,22 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     async invalidateComments(pr: RhodeCodePullRequest): Promise<void> {
         this._comments.delete(String(pr.pull_request_id));
         await this.getCommentsHtml(pr);
+    }
+
+    /** Toggle a group's selection state for filtering repos. */
+    toggleGroupSelection(groupId: number): void {
+        if (this.selectedGroups.has(String(groupId))) {
+            this.selectedGroups.delete(String(groupId));
+        } else {
+            this.selectedGroups.add(String(groupId));
+        }
+        this._onDidChangeTreeData.fire();
+    }
+
+    /** Select a repository from the tree. */
+    selectRepo(repo: RepoInfo): void {
+        // This will be called from commands.ts to set the selected repo
+        setStoredRepo(repo);
+        this._onDidChangeTreeData.fire();
     }
 }
