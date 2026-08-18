@@ -175,18 +175,24 @@ async function checkAndPromptForRhodeCode(): Promise<void> {
 export async function autoDetectRepository(client: RhodeCodeClient): Promise<RepoInfo | undefined> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder) {
+        debugLog('autoDetectRepository: no workspace folder');
         return undefined;
     }
     const remote = await getGitRemoteUrl(folder.uri.fsPath);
     if (!remote) {
+        debugLog('autoDetectRepository: no git remote found');
         return undefined;
     }
+    debugLog(`autoDetectRepository: git remote URL = ${remote.url}`);
     const repos = await client.getRepos();
+    debugLog(`autoDetectRepository: found ${repos.length} repos on server`);
     const match = repos.find((r) => cloneUrisMatch(r.clone_uri, remote.url));
     if (match) {
+        debugLog(`autoDetectRepository: matched repo "${match.repo_name}"`);
         await setStoredRepo(match);
         return match;
     }
+    debugLog('autoDetectRepository: no matching repo found');
     return undefined;
 }
 
@@ -288,7 +294,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 alwaysLog('No client yet, attempting detection mode...');
                 const detectClient = await RhodeCodeClient.createForDetection();
                 if (detectClient) {
+                    alwaysLog('Detection client created successfully');
                     await autoDetectRepository(detectClient);
+                    alwaysLog(`After detection: repo selected = ${getRepoIdRaw() || 'no'}`);
+                } else {
+                    alwaysLog('Detection client creation failed (no server URL or API key)');
                 }
             }
 
