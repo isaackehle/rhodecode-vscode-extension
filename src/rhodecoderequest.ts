@@ -40,10 +40,11 @@ export class RhodeCodeClient {
     /**
      * Client for calls that don't need a repo id (e.g. get_repos during
      * git-remote auto-detection). Returns undefined if server/key are missing.
+     * Does NOT prompt the user - uses raw config values only.
      */
     static async createForDetection(): Promise<RhodeCodeClient | undefined> {
-        const serverUrl = await config.getApiUrl();
-        const apiKey = await config.getApiKey();
+        const serverUrl = config.getServerUrlRaw();
+        const apiKey = config.getApiKeyRaw();
         if (!serverUrl || !apiKey) {
             return undefined;
         }
