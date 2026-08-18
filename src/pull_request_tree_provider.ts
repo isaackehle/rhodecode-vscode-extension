@@ -58,17 +58,18 @@ export class RefItem extends vscode.TreeItem {
     }
 }
 
-/** A group header in the groups pane. */
+/** A group as a folder in the tree view (Issue #19). */
 export class GroupItem extends vscode.TreeItem {
     constructor(
         public readonly group: RepoGroup,
+        public readonly repoCount: number,
         public readonly isSelected: boolean,
     ) {
-        super(group.group_name, vscode.TreeItemCollapsibleState.None);
+        super(group.group_name, vscode.TreeItemCollapsibleState.Expanded);
         this.id = `group-${group.group_id}`;
         this.contextValue = 'group';
-        this.description = isSelected ? '✓' : '';
-        this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '✓ Selected (multi-filter)' : 'Click to filter repos'}`;
+        this.description = isSelected ? '✓' : `${repoCount} repo${repoCount !== 1 ? 's' : ''}`;
+        this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '✓ Selected' : `Contains ${repoCount} repository${repoCount !== 1 ? 'ies' : ''}`}`;
         this.iconPath = isSelected ? new vscode.ThemeIcon('check') : new vscode.ThemeIcon('symbol-folder');
         this.command = {
             command: 'rhodecode.toggleGroup',
@@ -78,7 +79,7 @@ export class GroupItem extends vscode.TreeItem {
     }
 }
 
-/** A repository item in the repos pane. */
+/** A repository item in the tree view. */
 export class RepoItem extends vscode.TreeItem {
     constructor(public readonly repo: RepoInfo) {
         super(repo.repo_name, vscode.TreeItemCollapsibleState.None);
@@ -108,6 +109,14 @@ function reviewStatusIcon(status: string): string {
     }
 }
 
+/**
+ * Pull Request Tree Provider with two-pane Explorer-style layout (Issue #19).
+ *
+ * Shows a file-explorer style hierarchy:
+ * - Groups as folders (expandable)
+ * - Repos as files within their parent group
+ * - Pull requests, branches, and tags as separate sections
+ */
 export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private readonly _onDidChangeTreeData = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -130,7 +139,6 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         this._comments.clear();
         this.groups = [];
         this.repos = [];
-        this.selectedGroups.clear();
         this._onDidChangeTreeData.fire();
     }
 
@@ -146,9 +154,10 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         } catch {
             this.refs = undefined;
         }
-        // Load groups and repos for the left panel
+        // Load groups and repos
         try {
-            [this.groups, this.repos] = await Promise.all([client.getRepoGroups(), client.getRepos()]);
+            this.groups = await client.getRepoGroups();
+            this.repos = await client.getRepos();
         } catch {
             this.groups = [];
             this.repos = [];
@@ -188,50 +197,17 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 return [selectRepoItem];
             }
 
-            // Repo is selected - show all sections
-            return [
-                new SectionItem('groups', 'Groups', 'symbol-folder', 'Click to filter repositories'),
-                new SectionItem(
-                    'repos',
-                    'Repositories',
-                    'repo',
-                    this.selectedGroups.size > 0
-                        ? `Filtered by ${this.selectedGroups.size} group${this.selectedGroups.size > 1 ? 's' : ''}`
-                        : 'All repositories',
-                ),
-                new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
-                new SectionItem('branches', 'Branches', 'git-branch'),
-                new SectionItem('tags', 'Tags', 'tag'),
-            ];
+            // Build the two-pane tree: groups with repos inside, then PRs/branches/tags
+            return this.buildTree();
+        }
+
+        if (element instanceof GroupItem) {
+            // Show repos belonging to this group
+            return this.getReposForGroup(element.group);
         }
 
         if (element instanceof SectionItem) {
             switch (element.sectionId) {
-                case 'groups':
-                    return this.groups
-                        .sort((a, b) => a.group_name.localeCompare(b.group_name))
-                        .map((group) => new GroupItem(group, this.selectedGroups.has(String(group.group_id))));
-                case 'repos': {
-                    // Filter repos based on selected groups
-                    let filteredRepos = this.repos;
-                    if (this.selectedGroups.size > 0) {
-                        // Filter by matching repo_name path prefix with group names
-                        // e.g., repo_name "team/services/api" matches groups "team", "team/services"
-                        filteredRepos = this.repos.filter((repo) => {
-                            const repoNameParts = repo.repo_name.split('/');
-                            for (let i = 0; i < repoNameParts.length; i++) {
-                                const groupPath = repoNameParts.slice(0, i + 1).join('/');
-                                if (this.selectedGroups.has(groupPath)) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        });
-                    }
-                    return filteredRepos
-                        .sort((a, b) => a.repo_name.localeCompare(b.repo_name))
-                        .map((repo) => new RepoItem(repo));
-                }
                 case 'pullrequests':
                     return this.pullRequests.map((pr) => new PullRequestItem(pr));
                 case 'branches': {
@@ -253,6 +229,59 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         return [];
     }
 
+    /** Build the tree with groups containing their repos. */
+    private buildTree(): vscode.TreeItem[] {
+        const items: vscode.TreeItem[] = [];
+
+        // Add groups with their repos
+        for (const group of this.groups) {
+            const groupRepos = this.getReposForGroup(group);
+            const isSelected = this.selectedGroups.has(String(group.group_id));
+            items.push(new GroupItem(group, groupRepos.length, isSelected));
+            // Add repos as children of the group
+            items.push(...groupRepos);
+        }
+
+        // Add PRs, branches, tags as separate sections
+        if (this.pullRequests.length > 0) {
+            items.push(new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'));
+            items.push(...this.pullRequests.map((pr) => new PullRequestItem(pr)));
+        }
+
+        if (this.refs?.branches && Object.keys(this.refs.branches).length > 0) {
+            items.push(new SectionItem('branches', 'Branches', 'git-branch'));
+            const branches = this.refs.branches ?? {};
+            items.push(
+                ...Object.entries(branches)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([name, sha]) => new RefItem('branch', name, sha)),
+            );
+        }
+
+        if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
+            items.push(new SectionItem('tags', 'Tags', 'tag'));
+            const tags = this.refs.tags ?? {};
+            items.push(
+                ...Object.entries(tags)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([name, sha]) => new RefItem('tag', name, sha)),
+            );
+        }
+
+        return items;
+    }
+
+    /** Get repos that belong to a specific group. */
+    private getReposForGroup(group: RepoGroup): RepoItem[] {
+        const groupPath = `${group.group_name}/`;
+        const filteredRepos = this.repos.filter((repo) => {
+            // Check if repo_name starts with the group path
+            return repo.repo_name.startsWith(groupPath);
+        });
+
+        return filteredRepos.sort((a, b) => a.repo_name.localeCompare(b.repo_name)).map((repo) => new RepoItem(repo));
+    }
+
     /** Fetch (and cache) the PR page HTML used to parse the comment thread. */
     async getCommentsHtml(pr: RhodeCodePullRequest): Promise<string> {
         const client = this.getClient();
@@ -272,6 +301,13 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         await this.getCommentsHtml(pr);
     }
 
+    /** Select a repository from the tree. */
+    selectRepo(repo: RepoInfo): void {
+        // This will be called from commands.ts to set the selected repo
+        setStoredRepo(repo);
+        this._onDidChangeTreeData.fire();
+    }
+
     /** Toggle a group's selection state for filtering repos. */
     toggleGroupSelection(groupId: number): void {
         if (this.selectedGroups.has(String(groupId))) {
@@ -279,13 +315,6 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         } else {
             this.selectedGroups.add(String(groupId));
         }
-        this._onDidChangeTreeData.fire();
-    }
-
-    /** Select a repository from the tree. */
-    selectRepo(repo: RepoInfo): void {
-        // This will be called from commands.ts to set the selected repo
-        setStoredRepo(repo);
         this._onDidChangeTreeData.fire();
     }
 }

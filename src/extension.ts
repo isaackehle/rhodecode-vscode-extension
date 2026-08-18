@@ -204,10 +204,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     alwaysLog('=== RhodeCode Extension Activated ===');
     alwaysLog(`Version: ${context.extension.packageJSON.version}`);
 
+    client = undefined;
     const store = new HandledStore(context.workspaceState);
     initRepoState(context.workspaceState);
-
-    client = undefined;
     tree = new PullRequestTreeProvider(() => client, store);
     commentView = new CommentViewProvider(() => client, tree);
     prStatusBar = new PRStatusBar(() => client);

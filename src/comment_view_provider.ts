@@ -33,7 +33,7 @@ export class CommentViewProvider {
 
     constructor(
         private readonly getClient: () => RhodeCodeClient | undefined,
-        private readonly tree: PullRequestTreeProvider,
+        private readonly tree: PullRequestTreeProvider | null,
     ) {}
 
     async show(pr: RhodeCodePullRequest): Promise<void> {
@@ -79,7 +79,7 @@ export class CommentViewProvider {
                         return;
                     }
                     await client.commentOnPullRequest(this.pr.pull_request_id, message.text);
-                    await this.tree.invalidateComments(this.pr);
+                    await this.tree?.invalidateComments(this.pr);
                     await this.render();
                     break;
                 }
@@ -88,7 +88,7 @@ export class CommentViewProvider {
                         return;
                     }
                     await client.resolveTodoComment(this.pr.pull_request_id, message.commentId, message.text);
-                    await this.tree.invalidateComments(this.pr);
+                    await this.tree?.invalidateComments(this.pr);
                     vscode.window.showInformationMessage('Task resolved.');
                     await this.render();
                     break;
@@ -98,7 +98,7 @@ export class CommentViewProvider {
                         return;
                     }
                     await client.addTodoComment(this.pr.pull_request_id, message.text);
-                    await this.tree.invalidateComments(this.pr);
+                    await this.tree?.invalidateComments(this.pr);
                     vscode.window.showInformationMessage('Task added.');
                     await this.render();
                     break;
@@ -107,9 +107,9 @@ export class CommentViewProvider {
                     if (!message.commentId) {
                         return;
                     }
-                    const handled = this.tree.store.isHandled(repoId, this.pr.pull_request_id, message.commentId);
+                    const handled = this.tree?.store?.isHandled(repoId, this.pr.pull_request_id, message.commentId);
                     const nowHandled = !handled;
-                    this.tree.store.setHandled(repoId, this.pr.pull_request_id, message.commentId, nowHandled);
+                    this.tree?.store?.setHandled(repoId, this.pr.pull_request_id, message.commentId, nowHandled);
                     // When enabling "posts comment", also post a reply to the PR thread
                     // so the handled state is visible on the RhodeCode server.
                     if (nowHandled && isMarkHandledPostsCommentEnabled()) {
@@ -140,7 +140,10 @@ export class CommentViewProvider {
             return apiComments.map((c) => toDisplayComment(c));
         } catch {
             // Older servers lack get_pull_request_comments — fall back to HTML.
-            const html = await this.tree.getCommentsHtml(this.pr!);
+            const html = await this.tree?.getCommentsHtml(this.pr!);
+            if (!html) {
+                return [];
+            }
             const parsed = parsePullRequestComments(html);
             return parsed.map((c) => ({
                 id: c.commentId,
@@ -255,7 +258,7 @@ ${rows}
     }
 
     private renderCommentRow(comment: DisplayComment, repoId: string): string {
-        const handled = this.tree.store.isHandled(repoId, this.pr!.pull_request_id, comment.id);
+        const handled = this.tree?.store?.isHandled(repoId, this.pr!.pull_request_id, comment.id);
 
         let cls = 'comment';
         if (comment.isTodo) {
