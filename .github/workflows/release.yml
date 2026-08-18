@@ -28,11 +28,12 @@ jobs:
       - name: Install rumdl globally
         run: bun add -g rumdl
 
-      - name: Run lint and format checks
+      - name: Run lint, format, and tests
         run: |
           bun run lint
           bun run format:check
           rumdl check .
+          bun run test
 
       - name: Compile
         run: bun run compile

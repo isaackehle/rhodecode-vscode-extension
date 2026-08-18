@@ -127,3 +127,16 @@ export function normalizeServerUrl(input: string): { url: string } | { error: st
     }
     return { url: raw };
 }
+
+/**
+ * Extract just the host portion from a server URL (without protocol or path).
+ * Used for cleaner status bar display (issue #18).
+ * Example: "https://xxx.yyyy.com:5443" -> "xxx.yyyy.com:5443"
+ */
+export function extractServerHostFromUrl(url: string): string | undefined {
+    if (!url) {
+        return undefined;
+    }
+    const m = url.match(/^https?:\/\/([^/]+)/i);
+    return m ? m[1] : undefined;
+}

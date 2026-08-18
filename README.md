@@ -112,7 +112,9 @@ bun install
 bun run compile      # tsc -> out/
 bun run lint         # oxlint src
 bun run format       # oxfmt (write) src
-bun run test         # run tests
+bun run test         # run tests (scripts/run-tests.cjs)
+bun run test:unit    # bun test (unit tests only)
+bun run test:integration # node out/test/runTests.js (VS Code integration tests)
 bun run package      # vsce package -> .vsix
 bun run clean        # remove out/, .vscode-test/, .rumdl_cache/, and *.vsix
 ```

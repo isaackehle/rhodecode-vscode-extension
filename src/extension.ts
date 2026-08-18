@@ -4,7 +4,7 @@ import { PullRequestTreeProvider } from './pullRequestTreeProvider';
 import { HandledStore } from './handledStore';
 import { CommentViewProvider } from './commentViewProvider';
 import { registerCommands } from './commands';
-import { getServerUrlRaw } from './configuration';
+import { getServerUrlRaw, extractServerHostFromUrl } from './configuration';
 import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repoState';
 import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './gitRemote';
 import { watchForPushes } from './pushWatcher';
@@ -102,8 +102,9 @@ function updateStatusBar(item: vscode.StatusBarItem): void {
         return;
     }
     const label = getRepoLabel();
-    // Show server URL in status bar (cleaner display, issue #18)
-    item.text = `$(server) ${server}`;
+    // Show just the host portion for cleaner display (issue #18)
+    const host = extractServerHostFromUrl(server);
+    item.text = `$(server) ${host ?? server}`;
     item.tooltip = `Connected to ${server}\nRepository: ${label ?? repo}\nClick to switch repository`;
     item.command = 'rhodecode.selectRepository';
     item.show();
