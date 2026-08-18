@@ -3,16 +3,22 @@ import { RhodeCodeClient } from './rhodecode_request';
 import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rhodecode';
 import { HandledStore } from './handled_store';
 import { setStoredRepo, getStoredRepo } from './repo_state';
+import { getCurrentBranch } from './git_remote';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
-    constructor(public readonly pr: RhodeCodePullRequest) {
+    constructor(
+        public readonly pr: RhodeCodePullRequest,
+        public readonly isCurrent: boolean = false,
+    ) {
         super(`#${pr.pull_request_id} ${pr.title}`, vscode.TreeItemCollapsibleState.None);
         this.id = `pr-${pr.pull_request_id}`;
-        this.contextValue = 'pullrequest';
-        this.description = `${pr.status} · ${pr.review_status}`;
-        this.tooltip = pr.description || pr.title;
-        this.iconPath = new vscode.ThemeIcon(reviewStatusIcon(pr.review_status));
+        this.contextValue = isCurrent ? 'pullrequest-current' : 'pullrequest';
+        this.description = isCurrent ? `✓ ${pr.status} · ${pr.review_status}` : `${pr.status} · ${pr.review_status}`;
+        this.tooltip = (isCurrent ? '✓ ' : '') + (pr.description || pr.title);
+        this.iconPath = isCurrent
+            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            : new vscode.ThemeIcon(reviewStatusIcon(pr.review_status));
         this.command = {
             command: 'rhodecode.showComments',
             title: 'Show Comments',
@@ -43,13 +49,16 @@ export class RefItem extends vscode.TreeItem {
         public readonly kind: 'branch' | 'tag' | 'closed',
         public readonly name: string,
         public readonly sha: string,
+        public readonly isCurrent: boolean = false,
     ) {
         super(name, vscode.TreeItemCollapsibleState.None);
         this.id = `${kind}-${name}`;
-        this.contextValue = kind;
-        this.description = sha.slice(0, 8);
-        this.tooltip = `${kind}: ${name}\n${sha}`;
-        this.iconPath = new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
+        this.contextValue = isCurrent ? `${kind}-current` : kind;
+        this.description = isCurrent ? `✓ ${sha.slice(0, 8)}` : sha.slice(0, 8);
+        this.tooltip = `${kind}: ${name}${isCurrent ? ' (current)' : ''}\n${sha}`;
+        this.iconPath = isCurrent
+            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            : new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
         this.command = {
             command: 'rhodecode.openChangeset',
             title: 'Open in Browser',
@@ -127,6 +136,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private groups: RepoGroup[] = [];
     private repos: RepoInfo[] = [];
     private selectedGroups: Set<string> = new Set();
+    private currentBranch: string | undefined;
 
     constructor(
         private readonly getClient: () => RhodeCodeClient | undefined,
@@ -139,6 +149,16 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         this._comments.clear();
         this.groups = [];
         this.repos = [];
+        this._onDidChangeTreeData.fire();
+    }
+
+    /** Update the current branch and repo selection. */
+    async updateCurrentBranch(): Promise<void> {
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        if (!folder) {
+            return;
+        }
+        this.currentBranch = await getCurrentBranch(folder.uri.fsPath);
         this._onDidChangeTreeData.fire();
     }
 
@@ -162,6 +182,8 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             this.groups = [];
             this.repos = [];
         }
+        // Update current branch
+        await this.updateCurrentBranch();
         this._onDidChangeTreeData.fire();
     }
 
@@ -209,12 +231,9 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         if (element instanceof SectionItem) {
             switch (element.sectionId) {
                 case 'pullrequests':
-                    return this.pullRequests.map((pr) => new PullRequestItem(pr));
+                    return this.getPullRequestItems();
                 case 'branches': {
-                    const branches = this.refs?.branches ?? {};
-                    return Object.entries(branches)
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([name, sha]) => new RefItem('branch', name, sha));
+                    return this.getBranchItems();
                 }
                 case 'tags': {
                     const tags = this.refs?.tags ?? {};
@@ -280,6 +299,56 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         });
 
         return filteredRepos.sort((a, b) => a.repo_name.localeCompare(b.repo_name)).map((repo) => new RepoItem(repo));
+    }
+
+    /** Get pull request items with highlighting for current branch's PR. */
+    private getPullRequestItems(): vscode.TreeItem[] {
+        const items: vscode.TreeItem[] = [];
+
+        // Add a "Create PR" button if current branch has no PR
+        if (this.currentBranch && !this.getPRForBranch(this.currentBranch)) {
+            const createPRItem = new vscode.TreeItem(
+                '$(plus) Create Pull Request',
+                vscode.TreeItemCollapsibleState.None,
+            );
+            createPRItem.id = 'create-pr';
+            createPRItem.contextValue = 'create-pr';
+            createPRItem.description = `for branch "${this.currentBranch}"`;
+            createPRItem.iconPath = new vscode.ThemeIcon('plus');
+            createPRItem.tooltip = `No pull request found for branch "${this.currentBranch}".\nClick to create a new pull request.`;
+            createPRItem.command = {
+                command: 'rhodecode.createPullRequest',
+                title: 'Create Pull Request',
+                arguments: [this.currentBranch],
+            };
+            items.push(createPRItem);
+        }
+
+        // Add all PRs, marking the current branch's PR as highlighted
+        items.push(
+            ...this.pullRequests.map((pr) => {
+                const isCurrent = !!this.currentBranch && pr.source.reference.name === this.currentBranch;
+                return new PullRequestItem(pr, isCurrent);
+            }),
+        );
+
+        return items;
+    }
+
+    /** Get branch items with highlighting for the current branch. */
+    private getBranchItems(): vscode.TreeItem[] {
+        const branches = this.refs?.branches ?? {};
+        return Object.entries(branches)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([name, sha]) => {
+                const isCurrent = name === this.currentBranch;
+                return new RefItem('branch', name, sha, isCurrent);
+            });
+    }
+
+    /** Get the PR for a specific branch, if one exists. */
+    private getPRForBranch(branchName: string): RhodeCodePullRequest | undefined {
+        return this.pullRequests.find((pr) => pr.source.reference.name === branchName);
     }
 
     /** Fetch (and cache) the PR page HTML used to parse the comment thread. */
