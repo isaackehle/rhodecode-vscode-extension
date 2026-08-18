@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient, reportError } from './rhodecoderequest';
+import { RhodeCodeClient, reportError } from './rhodecode_request';
 import { PullRequestCommentData, RhodeCodePullRequest } from './model/rhodecode';
-import { parsePullRequestComments } from './commentParser';
-import { PullRequestTreeProvider } from './pullRequestTreeProvider';
-import { getRepoIdRaw } from './repoState';
+import { parsePullRequestComments } from './comment_parser';
+import { PullRequestTreeProvider } from './pull_request_tree_provider';
+import { getRepoIdRaw } from './repo_state';
 import { isMarkHandledPostsCommentEnabled } from './configuration';
 
 interface DisplayComment {

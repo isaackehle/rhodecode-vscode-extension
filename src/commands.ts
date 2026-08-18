@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient, reportError } from './rhodecoderequest';
+import { RhodeCodeClient, reportError } from './rhodecode_request';
 import { RhodeCodePullRequest } from './model/rhodecode';
-import { PullRequestItem, PullRequestTreeProvider, GroupItem, RepoItem } from './pullRequestTreeProvider';
-import { CommentViewProvider } from './commentViewProvider';
-import { setupConnection, browseRepositories } from './serverSetup';
+import { PullRequestItem, PullRequestTreeProvider, GroupItem, RepoItem } from './pull_request_tree_provider';
+import { CommentViewProvider } from './comment_view_provider';
+import { setupConnection, browseRepositories } from './server_setup';
 import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
-import { setStoredRepo } from './repoState';
-import { getCurrentBranch } from './gitRemote';
-import { RepoBrowserPanel } from './repoBrowserPanel';
+import { setStoredRepo } from './repo_state';
+import { getCurrentBranch } from './git_remote';
+import { RepoBrowserPanel } from './repo_browser_panel';
 import { debugOutputChannel } from './extension';
 
 export function registerCommands(

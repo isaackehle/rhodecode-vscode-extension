@@ -1,6 +1,6 @@
 import { window } from 'vscode';
 import * as config from './configuration';
-import { getRepoIdRaw } from './repoState';
+import { getRepoIdRaw } from './repo_state';
 import { debugLog } from './extension';
 import {
     CommentResult,

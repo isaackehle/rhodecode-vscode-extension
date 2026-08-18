@@ -14,7 +14,7 @@ Module._resolveFilename = function (request, ...args) {
 };
 
 const outDir = path.resolve(__dirname, '..', 'out');
-const modules = ['extension', 'rhodecoderequest', 'configuration', 'envfile', 'dotenvParser', 'gitRemote', 'repoState', 'handledStore', 'serverSetup', 'commands', 'commentViewProvider', 'commentParser', 'pullRequestTreeProvider'];
+const modules = ['extension', 'rhodecode_request', 'configuration', 'envfile', 'dotenv_parser', 'git_remote', 'repo_state', 'handled_store', 'server_setup', 'commands', 'comment_view_provider', 'comment_parser', 'pull_request_tree_provider', 'pr_status_bar', 'push_detection', 'push_watcher', 'git_extension_api', 'repo_browser_panel'];
 
 let failures = 0;
 for (const m of modules) {

@@ -32,7 +32,7 @@ function check(name, ok, extra) {
 // require (Node's require cache is keyed by resolved path) — then stub
 // browseRepositories on it. commands.js reads the property at call time via
 // `(0, serverSetup_1.browseRepositories)`, so overriding it here takes effect.
-const serverSetupPath = path.resolve(__dirname, '..', 'out', 'serverSetup.js');
+const serverSetupPath = path.resolve(__dirname, '..', 'out', 'server_setup.js');
 const serverSetup = require(serverSetupPath);
 
 const { registerCommands } = require(path.resolve(__dirname, '..', 'out', 'commands.js'));

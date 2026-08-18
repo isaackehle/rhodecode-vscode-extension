@@ -66,7 +66,7 @@ vscodeStub.ViewColumn = { One: 1, Two: 2 };
 
 // Track setStoredRepo calls
 let storedRepos = [];
-const originalRepoStatePath = path.resolve(__dirname, '..', 'out', 'repoState.js');
+const originalRepoStatePath = path.resolve(__dirname, '..', 'out', 'repo_state.js');
 delete require.cache[originalRepoStatePath];
 
 const repoStateModule = require(originalRepoStatePath);
@@ -81,7 +81,7 @@ repoStateModule.getRepoIdRaw = () => originalGetRepoIdRaw ? originalGetRepoIdRaw
 
 
 // Mock RhodeCodeClient
-const originalRequestPath = path.resolve(__dirname, '..', 'out', 'rhodecoderequest.js');
+const originalRequestPath = path.resolve(__dirname, '..', 'out', 'rhodecode_request.js');
 delete require.cache[originalRequestPath];
 
 const rhodeCodeModule = require(originalRequestPath);
@@ -119,7 +119,7 @@ configModule.getServerUrlRaw = () => mockClient._serverUrl;
 configModule.getApiKeyRaw = () => mockClient._apiKey;
 
 // Now load the module under test
-const originalPanelPath = path.resolve(__dirname, '..', 'out', 'repoBrowserPanel.js');
+const originalPanelPath = path.resolve(__dirname, '..', 'out', 'repo_browser_panel.js');
 delete require.cache[originalPanelPath];
 
 const { RepoBrowserPanel } = require(originalPanelPath);

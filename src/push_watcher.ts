@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { GitAPI, GitExtension, Repository } from './gitExtensionApi';
-import { BranchAheadState, isPushTransition } from './pushDetection';
+import { GitAPI, GitExtension, Repository } from './git_extension_api';
+import { BranchAheadState, isPushTransition } from './push_detection';
 
 /**
  * Watch all open git repositories for pushed branches (issue #6) and invoke

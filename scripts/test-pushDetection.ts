@@ -1,6 +1,6 @@
 // Unit tests for pushDetection.ts (isPushTransition)
 
-import { BranchAheadState, isPushTransition } from '../src/pushDetection';
+import { BranchAheadState, isPushTransition } from '../src/push_detection';
 
 let failures = 0;
 

@@ -8,7 +8,7 @@ import {
     cloneUrisMatch,
     getGitRemoteUrl,
     getCurrentBranch,
-} from '../src/gitRemote';
+} from '../src/git_remote';
 import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { execFile } from 'child_process';

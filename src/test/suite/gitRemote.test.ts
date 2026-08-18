@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { isRhodeCodeRemote, extractServerHost } from '../../gitRemote';
+import { isRhodeCodeRemote, extractServerHost } from '../../git_remote';
 
 suite('gitRemote Auto-Detection', () => {
     suite('isRhodeCodeRemote', () => {

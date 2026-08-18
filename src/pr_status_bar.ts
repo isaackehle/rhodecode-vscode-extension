@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient } from './rhodecoderequest';
-import { getCurrentBranch } from './gitRemote';
+import { RhodeCodeClient } from './rhodecode_request';
+import { getCurrentBranch } from './git_remote';
 import { RhodeCodePullRequest } from './model/rhodecode';
 
 /**

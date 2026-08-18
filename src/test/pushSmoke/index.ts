@@ -4,9 +4,9 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
-import { Repository } from '../../gitExtensionApi';
+import { Repository } from '../../git_extension_api';
 // Compiled JS at runtime lives at out/test/pushSmoke/index.js, so this reaches out/pushWatcher.js.
-import { watchForPushes } from '../../pushWatcher';
+import { watchForPushes } from '../../push_watcher';
 
 const execFileAsync = promisify(execFile);
 

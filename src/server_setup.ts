@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient } from './rhodecoderequest';
+import { RhodeCodeClient } from './rhodecode_request';
 import { RepoGroup, RepoInfo } from './model/rhodecode';
 import { normalizeServerUrl, isApiKeyFromEnvEnabled } from './configuration';
 import { getApiKeyFromEnv } from './envfile';

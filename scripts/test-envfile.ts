@@ -1,6 +1,6 @@
 // Quick sanity test for dotenv parser + git remote normalization
-import { parseDotEnv } from '../src/dotenvParser.ts';
-import { normalizeRepoPath, cloneUrisMatch } from '../src/gitRemote.ts';
+import { parseDotEnv } from '../src/dotenv_parser.ts';
+import { normalizeRepoPath, cloneUrisMatch } from '../src/git_remote.ts';
 
 const envCases: Array<{ name: string; input: string; want: Record<string, string> }> = [
     {

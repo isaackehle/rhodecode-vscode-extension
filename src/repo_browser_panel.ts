@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { RhodeCodeClient, reportError } from './rhodecoderequest';
+import { RhodeCodeClient, reportError } from './rhodecode_request';
 import { RepoGroup, RepoInfo } from './model/rhodecode';
 import { getServerUrlRaw, getApiKeyRaw } from './configuration';
-import { getStoredRepo, setStoredRepo, getRepoIdRaw } from './repoState';
+import { getStoredRepo, setStoredRepo, getRepoIdRaw } from './repo_state';
 
 /**
  * Webview panel for browsing and switching RhodeCode repositories (#13).

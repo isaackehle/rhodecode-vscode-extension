@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient, reportError } from './rhodecoderequest';
-import { PullRequestTreeProvider } from './pullRequestTreeProvider';
-import { HandledStore } from './handledStore';
-import { CommentViewProvider } from './commentViewProvider';
+import { RhodeCodeClient, reportError } from './rhodecode_request';
+import { PullRequestTreeProvider } from './pull_request_tree_provider';
+import { HandledStore } from './handled_store';
+import { CommentViewProvider } from './comment_view_provider';
 import { registerCommands } from './commands';
 import { getServerUrlRaw, extractServerHostFromUrl } from './configuration';
-import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repoState';
-import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './gitRemote';
-import { watchForPushes } from './pushWatcher';
+import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repo_state';
+import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './git_remote';
+import { watchForPushes } from './push_watcher';
 import { RepoInfo } from './model/rhodecode';
-import { PRStatusBar } from './prStatusBar';
+import { PRStatusBar } from './pr_status_bar';
 
 /** Debug output channel for the extension */
 export let debugOutputChannel: vscode.OutputChannel | undefined;

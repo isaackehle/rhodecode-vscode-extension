@@ -28,7 +28,7 @@ function check(name, ok, extra) {
     }
 }
 
-const { promptApiKey } = require(path.resolve(__dirname, '..', 'out', 'serverSetup.js'));
+const { promptApiKey } = require(path.resolve(__dirname, '..', 'out', 'server_setup.js'));
 
 /**
  * Runs `fn` with workspace.getConfiguration, window.showInputBox, and

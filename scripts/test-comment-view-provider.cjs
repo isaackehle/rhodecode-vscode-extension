@@ -29,7 +29,7 @@ function check(name, ok, extra) {
     }
 }
 
-const { CommentViewProvider } = require(path.resolve(__dirname, '..', 'out', 'commentViewProvider.js'));
+const { CommentViewProvider } = require(path.resolve(__dirname, '..', 'out', 'comment_view_provider.js'));
 
 const FAKE_PR = { pull_request_id: 42, title: 'Test PR' };
 

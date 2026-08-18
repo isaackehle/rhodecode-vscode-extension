@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient } from './rhodecoderequest';
+import { RhodeCodeClient } from './rhodecode_request';
 import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rhodecode';
-import { HandledStore } from './handledStore';
-import { setStoredRepo, getStoredRepo } from './repoState';
+import { HandledStore } from './handled_store';
+import { setStoredRepo, getStoredRepo } from './repo_state';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
