@@ -68,8 +68,8 @@ export class GroupItem extends vscode.TreeItem {
         this.id = `group-${group.group_id}`;
         this.contextValue = 'group';
         this.description = isSelected ? '✓' : '';
-        this.tooltip = `Group: ${group.group_name}\n${isSelected ? 'Selected' : 'Click to filter repos'}`;
-        this.iconPath = new vscode.ThemeIcon('symbol-folder');
+        this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '✓ Selected (multi-filter)' : 'Click to filter repos'}`;
+        this.iconPath = isSelected ? new vscode.ThemeIcon('check') : new vscode.ThemeIcon('symbol-folder');
         this.command = {
             command: 'rhodecode.toggleGroup',
             title: 'Toggle Group',
@@ -191,7 +191,14 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             // Repo is selected - show all sections
             return [
                 new SectionItem('groups', 'Groups', 'symbol-folder', 'Click to filter repositories'),
-                new SectionItem('repos', 'Repositories', 'repo', 'Filtered by selected groups'),
+                new SectionItem(
+                    'repos',
+                    'Repositories',
+                    'repo',
+                    this.selectedGroups.size > 0
+                        ? `Filtered by ${this.selectedGroups.size} group${this.selectedGroups.size > 1 ? 's' : ''}`
+                        : 'All repositories',
+                ),
                 new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'),
                 new SectionItem('branches', 'Branches', 'git-branch'),
                 new SectionItem('tags', 'Tags', 'tag'),
@@ -208,11 +215,17 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                     // Filter repos based on selected groups
                     let filteredRepos = this.repos;
                     if (this.selectedGroups.size > 0) {
-                        // Since RepoInfo doesn't have a direct group reference,
-                        // we filter by matching the owner field with group names
+                        // Filter by matching repo_name path prefix with group names
+                        // e.g., repo_name "team/services/api" matches groups "team", "team/services"
                         filteredRepos = this.repos.filter((repo) => {
-                            const owner = repo.owner || '';
-                            return this.selectedGroups.has(owner);
+                            const repoNameParts = repo.repo_name.split('/');
+                            for (let i = 0; i < repoNameParts.length; i++) {
+                                const groupPath = repoNameParts.slice(0, i + 1).join('/');
+                                if (this.selectedGroups.has(groupPath)) {
+                                    return true;
+                                }
+                            }
+                            return false;
                         });
                     }
                     return filteredRepos
