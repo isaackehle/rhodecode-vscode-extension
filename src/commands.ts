@@ -8,7 +8,7 @@ import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration
 import { setStoredRepo } from './repo_state';
 import { getCurrentBranch } from './git_remote';
 import { RepoBrowserPanel } from './repo_browser_panel';
-import { debugOutputChannel } from './extension';
+import { debugOutputChannel, debugLog } from './extension';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -109,6 +109,72 @@ export function registerCommands(
                 return;
             }
             await vscode.env.openExternal(vscode.Uri.parse(client.changesetUrl(sha)));
+        }),
+
+        vscode.commands.registerCommand('rhodecode.switchBranch', async (item?: vscode.TreeItem) => {
+            const client = getClient();
+            if (!client) {
+                return;
+            }
+            // Extract branch name from the item label
+            const branchName = item?.label as string | undefined;
+            if (!branchName) {
+                vscode.window.showErrorMessage('No branch name found.');
+                return;
+            }
+            try {
+                debugLog(`Switching to branch: ${branchName}`);
+                // Use git command to checkout the branch
+                const { exec } = await import('child_process');
+                const { promisify } = await import('util');
+                const execAsync = promisify(exec);
+                const folder = vscode.workspace.workspaceFolders?.[0];
+                if (!folder) {
+                    vscode.window.showErrorMessage('No workspace folder found.');
+                    return;
+                }
+                await execAsync(`git checkout ${branchName}`, { cwd: folder.uri.fsPath });
+                debugLog(`Switched to branch: ${branchName}`);
+                vscode.window.showInformationMessage(`Switched to branch "${branchName}"`);
+                await tree.updateCurrentBranch();
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                debugLog(`Failed to switch to branch ${branchName}: ${message}`);
+                vscode.window.showErrorMessage(`Failed to switch to branch "${branchName}": ${message}`);
+            }
+        }),
+
+        vscode.commands.registerCommand('rhodecode.switchTag', async (item?: vscode.TreeItem) => {
+            const client = getClient();
+            if (!client) {
+                return;
+            }
+            // Extract tag name from the item label
+            const tagName = item?.label as string | undefined;
+            if (!tagName) {
+                vscode.window.showErrorMessage('No tag name found.');
+                return;
+            }
+            try {
+                debugLog(`Switching to tag: ${tagName}`);
+                // Use git command to checkout the tag
+                const { exec } = await import('child_process');
+                const { promisify } = await import('util');
+                const execAsync = promisify(exec);
+                const folder = vscode.workspace.workspaceFolders?.[0];
+                if (!folder) {
+                    vscode.window.showErrorMessage('No workspace folder found.');
+                    return;
+                }
+                await execAsync(`git checkout ${tagName}`, { cwd: folder.uri.fsPath });
+                debugLog(`Switched to tag: ${tagName}`);
+                vscode.window.showInformationMessage(`Switched to tag "${tagName}"`);
+                await tree.updateCurrentBranch();
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                debugLog(`Failed to switch to tag ${tagName}: ${message}`);
+                vscode.window.showErrorMessage(`Failed to switch to tag "${tagName}": ${message}`);
+            }
         }),
 
         vscode.commands.registerCommand('rhodecode.refresh', async () => {

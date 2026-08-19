@@ -117,6 +117,18 @@
                 "command": "rhodecode.selectRepoFromTree",
                 "icon": "$(repo)",
                 "title": "Select Repository"
+            },
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.switchBranch",
+                "icon": "$(git-branch)",
+                "title": "Switch to Branch"
+            },
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.switchTag",
+                "icon": "$(tag)",
+                "title": "Switch to Tag"
             }
         ],
         "configuration": [
@@ -191,6 +203,16 @@
                     "command": "rhodecode.openChangeset",
                     "group": "inline",
                     "when": "view == rhodecode.pullRequests && viewItem =~ /branch|tag/"
+                },
+                {
+                    "command": "rhodecode.switchBranch",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem =~ /branch/"
+                },
+                {
+                    "command": "rhodecode.switchTag",
+                    "group": "inline",
+                    "when": "view == rhodecode.pullRequests && viewItem =~ /tag/"
                 }
             ],
             "view/title": [
