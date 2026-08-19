@@ -17,6 +17,8 @@
         "oxfmtrc",
         "oxlint",
         "oxlintrc",
+        "pullrequest",
+        "pullrequests",
         "repoid",
         "rhodecode",
         "rumdl",
