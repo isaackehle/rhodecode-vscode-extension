@@ -207,8 +207,16 @@ export class RhodeCodeClient {
     async getRepoGroups(): Promise<RepoGroup[]> {
         const data = await this.post<RepoGroup[]>('get_repo_groups', {});
         this.throwIfError(data);
-        logDebug(`get_repo_groups: returned ${data.result?.length ?? 0} groups`);
-        return data.result ?? [];
+        const groups = data.result ?? [];
+        logDebug(`get_repo_groups: returned ${groups.length} groups`);
+        if (groups.length > 0) {
+            const sample = groups
+                .slice(0, 10)
+                .map((g) => g.group_name)
+                .join(', ');
+            logDebug(`  First groups: ${sample}${groups.length > 10 ? ` (${groups.length - 10} more)` : ''}`);
+        }
+        return groups;
     }
 
     /**
@@ -218,8 +226,16 @@ export class RhodeCodeClient {
     async getRepos(): Promise<RepoInfo[]> {
         const data = await this.post<RepoInfo[]>('get_repos', {});
         this.throwIfError(data);
-        logDebug(`get_repos: returned ${data.result?.length ?? 0} repos`);
-        return data.result ?? [];
+        const repos = data.result ?? [];
+        logDebug(`get_repos: returned ${repos.length} repos`);
+        if (repos.length > 0) {
+            const sample = repos
+                .slice(0, 10)
+                .map((r) => r.repo_name)
+                .join(', ');
+            logDebug(`  First repos: ${sample}${repos.length > 10 ? ` (${repos.length - 10} more)` : ''}`);
+        }
+        return repos;
     }
 
     /**

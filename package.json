@@ -1,4 +1,23 @@
 {
+    "activationEvents": [
+        "onCommand:rhodecode.connect",
+        "onCommand:rhodecode.refresh",
+        "onCommand:rhodecode.showPullRequests",
+        "onCommand:rhodecode.showComments",
+        "onCommand:rhodecode.selectRepository",
+        "onCommand:rhodecode.selectRepoFromTree",
+        "onCommand:rhodecode.toggleGroup",
+        "onCommand:rhodecode.switchBranch",
+        "onCommand:rhodecode.switchTag",
+        "onCommand:rhodecode.approvePullRequest",
+        "onCommand:rhodecode.mergePullRequest",
+        "onCommand:rhodecode.closePullRequest",
+        "onCommand:rhodecode.createPullRequest",
+        "onCommand:rhodecode.openDebugOutput",
+        "onCommand:rhodecode.openPullRequest",
+        "onCommand:rhodecode.openChangeset",
+        "onView:rhodecode.pullRequests"
+    ],
     "categories": [
         "Other"
     ],
