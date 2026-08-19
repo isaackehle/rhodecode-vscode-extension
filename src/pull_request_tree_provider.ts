@@ -173,7 +173,11 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         if (!folder) {
             return;
         }
+        const oldBranch = this.currentBranch;
         this.currentBranch = await getCurrentBranch(folder.uri.fsPath);
+        if (oldBranch !== this.currentBranch) {
+            logDebug(`Branch update: "${oldBranch ?? 'none'}" -> "${this.currentBranch ?? 'none'}"`);
+        }
         this._onDidChangeTreeData.fire();
     }
 

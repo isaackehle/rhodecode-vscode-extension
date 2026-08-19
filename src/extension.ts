@@ -10,6 +10,7 @@ import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost }
 import { watchForPushes } from './push_watcher';
 import { RepoInfo } from './model/rhodecode';
 import { PRStatusBar } from './pr_status_bar';
+import { GitExtension } from './git_extension_api';
 
 /** Debug output channel for the extension */
 export let debugOutputChannel: vscode.OutputChannel | undefined;
@@ -323,6 +324,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Offer to open/create a pull request whenever a branch is pushed (issue #6).
     context.subscriptions.push(watchForPushes((branch) => void handleBranchPushed(branch)));
+
+    // Listen for branch changes via Git extension API (auto-refresh PR/branch list).
+    try {
+        const gitExtension = vscode.extensions.getExtension('vscode.git');
+        if (gitExtension?.isActive) {
+            const gitAPI = (gitExtension.exports as unknown as GitExtension).getAPI(1);
+            // Listen for any repository state change (branch switch, commit, etc.)
+            gitAPI.repositories.forEach((repo) => {
+                context.subscriptions.push(
+                    repo.state.onDidChange(async () => {
+                        const newBranch = repo.state?.HEAD?.name;
+                        if (newBranch) {
+                            logDebug(`Branch change detected: ${newBranch}`);
+                            logDebug('Starting PR/branch list refresh...');
+                            await tree?.updateCurrentBranch();
+                            await tree?.load();
+                            logDebug('PR/branch list refresh complete');
+                        }
+                    }),
+                );
+            });
+        } else {
+            logDebug('Git extension not available, skipping branch change listener');
+        }
+    } catch (err) {
+        logDebug(`Failed to set up Git extension listener: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // Kick off an initial load so the view is populated when configured.
     void (async () => {

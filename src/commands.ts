@@ -177,8 +177,10 @@ export function registerCommands(
                 }
                 await execAsync(`git checkout ${branchName}`, { cwd: folder.uri.fsPath });
                 logClick(`Successfully switched to branch: ${branchName}`);
+                logClick('Refreshing tree view after branch switch');
                 await tree.updateCurrentBranch();
-                logClick('Updated current branch in tree view');
+                await tree.load();
+                logClick('Tree view refreshed after branch switch');
                 vscode.window.showInformationMessage(`Switched to branch "${branchName}"`);
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
