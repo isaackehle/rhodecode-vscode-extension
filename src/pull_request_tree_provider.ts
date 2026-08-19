@@ -210,7 +210,9 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         }
         // Update current branch
         await this.updateCurrentBranch();
-        this._onDidChangeTreeData.fire();
+        // Force complete tree refresh
+        this._onDidChangeTreeData.fire(undefined);
+        logDebug('load() complete, tree refreshed');
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -300,22 +302,28 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private buildTree(): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
 
+        logDebug('buildTree(): Starting to build tree');
+
         // Add PRs, branches, tags, bookmarks as section headers only
         // Their children are added when the section is expanded
         if (this.pullRequests.length > 0) {
             items.push(new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'));
+            logDebug('buildTree(): Added Pull Requests section');
         }
 
         if (this.refs?.branches && Object.keys(this.refs.branches).length > 0) {
             items.push(new BranchesSectionItem('branches'));
+            logDebug('buildTree(): Added Branches section');
         }
 
         if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
             items.push(new SectionItem('tags', 'Tags', 'tag'));
+            logDebug('buildTree(): Added Tags section');
         }
 
         if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
             items.push(new SectionItem('bookmarks', 'Bookmarks', 'star-empty'));
+            logDebug('buildTree(): Added Bookmarks section');
         }
 
         // Add groups with their repos (user-accessible only)
@@ -333,17 +341,21 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 `Showing ${groupsWithRepos.length} group${groupsWithRepos.length !== 1 ? 's' : ''} with accessible repos`,
             );
             items.push(new SectionItem('groups', 'Groups', 'symbol-folder'));
+            logDebug('buildTree(): Added Groups section header');
             for (const group of groupsWithRepos) {
                 const groupRepos = this.getReposForGroup(group);
                 const isSelected = this.selectedGroups.has(String(group.group_id));
                 items.push(new GroupItem(group, groupRepos.length, isSelected));
+                logDebug(`buildTree(): Added group "${group.group_name}" with ${groupRepos.length} repos`);
                 // Add repos as children of the group
                 items.push(...groupRepos);
+                logDebug(`buildTree(): Added ${groupRepos.length} repos under "${group.group_name}"`);
             }
         } else {
-            logDebug('No groups with accessible repos found');
+            logDebug('buildTree(): No groups with accessible repos found');
         }
 
+        logDebug(`buildTree(): Returning ${items.length} top-level items`);
         return items;
     }
 
