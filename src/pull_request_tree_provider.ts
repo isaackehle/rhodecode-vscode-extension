@@ -326,33 +326,15 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             logDebug('buildTree(): Added Bookmarks section');
         }
 
-        // Add groups with their repos (user-accessible only)
-        // Only show groups that have at least one repo the user can access
+        // Add groups as a section header only - children are added when expanded
         const groupsWithRepos = this.groups.filter((group) => {
             const groupRepos = this.getReposForGroup(group);
-            logDebug(
-                `Group "${group.group_name}" has ${groupRepos.length} accessible repo${groupRepos.length !== 1 ? 's' : ''}`,
-            );
             return groupRepos.length > 0;
         });
 
         if (groupsWithRepos.length > 0) {
-            logDebug(
-                `Showing ${groupsWithRepos.length} group${groupsWithRepos.length !== 1 ? 's' : ''} with accessible repos`,
-            );
             items.push(new SectionItem('groups', 'Groups', 'symbol-folder'));
             logDebug('buildTree(): Added Groups section header');
-            for (const group of groupsWithRepos) {
-                const groupRepos = this.getReposForGroup(group);
-                const isSelected = this.selectedGroups.has(String(group.group_id));
-                items.push(new GroupItem(group, groupRepos.length, isSelected));
-                logDebug(`buildTree(): Added group "${group.group_name}" with ${groupRepos.length} repos`);
-                // Add repos as children of the group
-                items.push(...groupRepos);
-                logDebug(`buildTree(): Added ${groupRepos.length} repos under "${group.group_name}"`);
-            }
-        } else {
-            logDebug('buildTree(): No groups with accessible repos found');
         }
 
         logDebug(`buildTree(): Returning ${items.length} top-level items`);
