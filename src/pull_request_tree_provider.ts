@@ -274,6 +274,21 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([name, sha]) => new RefItem('branch', name, sha));
                 }
+                case 'groups': {
+                    // Return groups with their repos
+                    const groupsWithRepos = this.groups.filter((group) => {
+                        const groupRepos = this.getReposForGroup(group);
+                        return groupRepos.length > 0;
+                    });
+                    const items: vscode.TreeItem[] = [];
+                    for (const group of groupsWithRepos) {
+                        const groupRepos = this.getReposForGroup(group);
+                        const isSelected = this.selectedGroups.has(String(group.group_id));
+                        items.push(new GroupItem(group, groupRepos.length, isSelected));
+                        items.push(...groupRepos);
+                    }
+                    return items;
+                }
                 default:
                     return [];
             }

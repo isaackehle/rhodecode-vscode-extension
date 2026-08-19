@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient, reportError } from './rhodecode_request';
-import { PullRequestTreeProvider } from './pull_request_tree_provider';
-import { HandledStore } from './handled_store';
-import { CommentViewProvider } from './comment_view_provider';
 import { registerCommands } from './commands';
-import { getServerUrlRaw, extractServerHostFromUrl } from './configuration';
-import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repo_state';
-import { getGitRemoteUrl, cloneUrisMatch, isRhodeCodeRemote, extractServerHost } from './git_remote';
-import { watchForPushes } from './push_watcher';
+import { CommentViewProvider } from './comment_view_provider';
+import { extractServerHostFromUrl, getServerUrlRaw } from './configuration';
+import { GitExtension } from './git_extension_api';
+import { cloneUrisMatch, extractServerHost, getGitRemoteUrl, isRhodeCodeRemote } from './git_remote';
+import { HandledStore } from './handled_store';
 import { RepoInfo } from './model/rhodecode';
 import { PRStatusBar } from './pr_status_bar';
-import { GitExtension } from './git_extension_api';
+import { PullRequestTreeProvider } from './pull_request_tree_provider';
+import { watchForPushes } from './push_watcher';
+import { getRepoIdRaw, getRepoLabel, getStoredRepo, initRepoState, setStoredRepo } from './repo_state';
+import { RhodeCodeClient, reportError } from './rhodecode_request';
 
 /** Debug output channel for the extension */
 export let debugOutputChannel: vscode.OutputChannel | undefined;
@@ -385,9 +385,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
             client = await RhodeCodeClient.create().catch(() => undefined);
             if (client && tree) {
-                logAlways('Loading pull requests...');
+                logAlways('Loading the tree...');
                 await tree.load();
-                logAlways('Pull requests loaded successfully');
+                logAlways('Tree loaded successfully');
             }
         } catch (err) {
             logAlways(`Initial load error: ${err instanceof Error ? err.message : String(err)}`);
