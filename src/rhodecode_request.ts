@@ -1,7 +1,7 @@
 import { window } from 'vscode';
 import * as config from './configuration';
 import { getRepoIdRaw } from './repo_state';
-import { debugLog } from './extension';
+import { logDebug } from './extension';
 import {
     CommentResult,
     PullRequestCommentData,
@@ -52,7 +52,7 @@ export class RhodeCodeClient {
     }
 
     private async post<T>(method: string, args: Record<string, unknown>): Promise<RhodeCodeResponse<T>> {
-        debugLog(`API CALL: ${method} with args: ${JSON.stringify(args)}`);
+        logDebug(`API CALL: ${method} with args: ${JSON.stringify(args)}`);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 30000);
         let response: Response;
@@ -69,7 +69,7 @@ export class RhodeCodeClient {
                 signal: controller.signal,
             });
         } catch (err) {
-            debugLog(`API ERROR (${method}): ${err instanceof Error ? err.message : String(err)}`);
+            logDebug(`API ERROR (${method}): ${err instanceof Error ? err.message : String(err)}`);
             throw new Error(`RhodeCode API request failed: ${err instanceof Error ? err.message : String(err)}`);
         } finally {
             clearTimeout(timer);
@@ -77,15 +77,15 @@ export class RhodeCodeClient {
 
         if (response.status !== 200) {
             const error = `RhodeCode API returned HTTP ${response.status}`;
-            debugLog(`API ERROR (${method}): ${error}`);
+            logDebug(`API ERROR (${method}): ${error}`);
             throw new Error(error);
         }
 
         const result = (await response.json()) as RhodeCodeResponse<T>;
         if (result.error) {
-            debugLog(`API ERROR (${method}): ${JSON.stringify(result.error)}`);
+            logDebug(`API ERROR (${method}): ${JSON.stringify(result.error)}`);
         } else {
-            debugLog(`API RESPONSE (${method}): success, result type: ${typeof result.result}`);
+            logDebug(`API RESPONSE (${method}): success, result type: ${typeof result.result}`);
         }
         return result;
     }

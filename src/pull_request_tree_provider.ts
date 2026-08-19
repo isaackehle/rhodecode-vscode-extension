@@ -4,7 +4,7 @@ import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rho
 import { HandledStore } from './handled_store';
 import { setStoredRepo, getStoredRepo } from './repo_state';
 import { getCurrentBranch } from './git_remote';
-import { debugLog } from './extension';
+import { logDebug } from './extension';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
@@ -174,21 +174,21 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         this.pullRequests = await client.getPullRequests();
         // Refs are best-effort: PR listing should not fail because of them.
         try {
-            debugLog('Loading branches and tags...');
+            logDebug('Loading branches and tags...');
             this.refs = await client.getRepoRefs();
-            debugLog('Branches and tags loaded successfully');
+            logDebug('Branches and tags loaded successfully');
         } catch {
-            debugLog('Failed to load branches and tags');
+            logDebug('Failed to load branches and tags');
             this.refs = undefined;
         }
         // Load groups and repos
         try {
-            debugLog('Loading groups and repos...');
+            logDebug('Loading groups and repos...');
             this.groups = await client.getRepoGroups();
             this.repos = await client.getRepos();
-            debugLog('Groups and repos loaded successfully');
+            logDebug('Groups and repos loaded successfully');
         } catch {
-            debugLog('Failed to load groups and repos');
+            logDebug('Failed to load groups and repos');
             this.groups = [];
             this.repos = [];
         }

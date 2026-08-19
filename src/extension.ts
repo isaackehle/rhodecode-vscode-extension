@@ -22,19 +22,19 @@ export enum LogLevel {
     ERROR = 'error',
 }
 
-/** Theme icons for log levels */
+/** Theme icons for log levels (emoji) */
 const LOG_ICONS: Record<LogLevel, string> = {
-    [LogLevel.DEBUG]: '$(debug)',
-    [LogLevel.INFO]: '$(info)',
-    [LogLevel.WARN]: '$(warning)',
-    [LogLevel.ERROR]: '$(error)',
+    [LogLevel.DEBUG]: '🪲',
+    [LogLevel.INFO]: '📖',
+    [LogLevel.WARN]: '⚠️',
+    [LogLevel.ERROR]: '❌',
 };
 
 /**
  * Log a message to the debug output channel with a level.
- * This is useful for troubleshooting button clicks, API calls, etc.
+ * Private to extension.ts - use logDebug/logWarn/logError for external access.
  */
-export function logToDebug(message: string, level: LogLevel = LogLevel.DEBUG): void {
+function logToDebug(message: string, level: LogLevel = LogLevel.DEBUG): void {
     if (debugOutputChannel && vscode.workspace.getConfiguration('rhodecode').get<boolean>('debug', false)) {
         const icon = LOG_ICONS[level];
         const timestamp = new Date().toLocaleTimeString();
@@ -46,40 +46,47 @@ export function logToDebug(message: string, level: LogLevel = LogLevel.DEBUG): v
 /**
  * Log a DEBUG level message for tracking button clicks.
  */
-export function debugClick(message: string): void {
+export function logClick(message: string): void {
     logToDebug(message, LogLevel.DEBUG);
 }
 
 /**
  * Log a WARN level message when something fails or behaves unexpectedly.
  */
-export function warn(message: string): void {
+export function logWarn(message: string): void {
     logToDebug(message, LogLevel.WARN);
 }
 
 /**
  * Log an ERROR level message for critical failures.
  */
-export function error(message: string): void {
+export function logError(message: string): void {
     logToDebug(message, LogLevel.ERROR);
 }
 
 /**
- * Log a DEBUG level message (alias for debugClick for backwards compatibility).
+ * Log a DEBUG level message.
+ * Alias for logClick for backwards compatibility.
  */
-export function debugLog(message: string): void {
-    debugClick(message);
+export function logDebug(message: string): void {
+    logClick(message);
 }
 
 /**
  * Log a message to the debug output channel regardless of settings.
  * Use this for critical events like activation.
  */
-export function alwaysLog(message: string): void {
+export function logAlways(message: string): void {
     if (debugOutputChannel) {
         debugOutputChannel.appendLine(message);
     }
 }
+
+/**
+ * Log a message to the debug output channel regardless of settings.
+ * Alias for logAlways (for backwards compatibility).
+ */
+export const alwaysLog = logAlways;
 
 /** Branches that never get their own pull request, so the push tip is skipped for them. */
 const DEFAULT_BRANCH_NAMES = new Set(['master', 'main', 'trunk']);
@@ -222,24 +229,24 @@ async function checkAndPromptForRhodeCode(): Promise<void> {
 export async function autoDetectRepository(client: RhodeCodeClient): Promise<RepoInfo | undefined> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder) {
-        debugLog('autoDetectRepository: no workspace folder');
+        logDebug('autoDetectRepository: no workspace folder');
         return undefined;
     }
     const remote = await getGitRemoteUrl(folder.uri.fsPath);
     if (!remote) {
-        debugLog('autoDetectRepository: no git remote found');
+        logDebug('autoDetectRepository: no git remote found');
         return undefined;
     }
-    debugLog(`autoDetectRepository: git remote URL = ${remote.url}`);
+    logDebug(`autoDetectRepository: git remote URL = ${remote.url}`);
     const repos = await client.getRepos();
-    debugLog(`autoDetectRepository: found ${repos.length} repos on server`);
+    logDebug(`autoDetectRepository: found ${repos.length} repos on server`);
     const match = repos.find((r) => cloneUrisMatch(r.clone_uri, remote.url));
     if (match) {
-        debugLog(`autoDetectRepository: matched repo "${match.repo_name}"`);
+        logDebug(`autoDetectRepository: matched repo "${match.repo_name}"`);
         await setStoredRepo(match);
         return match;
     }
-    debugLog('autoDetectRepository: no matching repo found');
+    logDebug('autoDetectRepository: no matching repo found');
     return undefined;
 }
 
@@ -248,8 +255,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     debugOutputChannel = vscode.window.createOutputChannel('RhodeCode', 'rhodecode');
     context.subscriptions.push(debugOutputChannel);
 
-    alwaysLog('=== RhodeCode Extension Activated ===');
-    alwaysLog(`Version: ${context.extension.packageJSON.version}`);
+    logAlways('=== RhodeCode Extension Activated ===');
+    logAlways(`Version: ${context.extension.packageJSON.version}`);
 
     client = undefined;
     const store = new HandledStore(context.workspaceState);
@@ -298,7 +305,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {
             if (e.affectsConfiguration('rhodecode')) {
-                alwaysLog('Configuration changed, rebuilding client...');
+                logAlways('Configuration changed, rebuilding client...');
                 // Rebuild from config so the wizard-persisted values take
                 // effect even when this event fires after setClient().
                 client = await RhodeCodeClient.create().catch(() => undefined);
@@ -320,42 +327,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Kick off an initial load so the view is populated when configured.
     void (async () => {
         try {
-            alwaysLog('Starting initial load...');
-            alwaysLog(`Server URL configured: ${getServerUrlRaw() ? 'yes' : 'no'}`);
-            alwaysLog(`Repository selected: ${getRepoIdRaw() || 'no'}`);
+            logAlways('Starting initial load...');
+            logAlways(`Server URL configured: ${getServerUrlRaw() ? 'yes' : 'no'}`);
+            logAlways(`Repository selected: ${getRepoIdRaw() || 'no'}`);
 
             // Check for RhodeCode repo on initial activation
             await checkAndPromptForRhodeCode();
 
-            alwaysLog('Attempting to create client...');
+            logAlways('Attempting to create client...');
             client = await RhodeCodeClient.create();
 
             if (client) {
-                alwaysLog(`Client created successfully for repo: ${client.getApiKey()}`);
+                logAlways(`Client created successfully for repo: ${client.getApiKey()}`);
             }
 
             // If no repo is selected yet, try git-remote auto-detection.
             // get_repos needs no repo id, so a fresh client suffices.
             if (!client && getServerUrlRaw() && !getStoredRepo()) {
-                alwaysLog('No client yet, attempting detection mode...');
+                logAlways('No client yet, attempting detection mode...');
                 const detectClient = await RhodeCodeClient.createForDetection();
                 if (detectClient) {
-                    alwaysLog('Detection client created successfully');
+                    logAlways('Detection client created successfully');
                     await autoDetectRepository(detectClient);
-                    alwaysLog(`After detection: repo selected = ${getRepoIdRaw() || 'no'}`);
+                    logAlways(`After detection: repo selected = ${getRepoIdRaw() || 'no'}`);
                 } else {
-                    alwaysLog('Detection client creation failed (no server URL or API key)');
+                    logAlways('Detection client creation failed (no server URL or API key)');
                 }
             }
 
             client = await RhodeCodeClient.create().catch(() => undefined);
             if (client && tree) {
-                alwaysLog('Loading pull requests...');
+                logAlways('Loading pull requests...');
                 await tree.load();
-                alwaysLog('Pull requests loaded successfully');
+                logAlways('Pull requests loaded successfully');
             }
         } catch (err) {
-            alwaysLog(`Initial load error: ${err instanceof Error ? err.message : String(err)}`);
+            logAlways(`Initial load error: ${err instanceof Error ? err.message : String(err)}`);
             reportError('load', err);
         }
         updateStatusBar(statusBar);
