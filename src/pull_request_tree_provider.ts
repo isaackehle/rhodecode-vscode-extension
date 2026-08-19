@@ -278,19 +278,6 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private buildTree(): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
 
-        // Add groups with their repos (user-accessible only)
-        for (const group of this.groups) {
-            const groupRepos = this.getReposForGroup(group);
-            // Skip groups with no accessible repos
-            if (groupRepos.length === 0) {
-                continue;
-            }
-            const isSelected = this.selectedGroups.has(String(group.group_id));
-            items.push(new GroupItem(group, groupRepos.length, isSelected));
-            // Add repos as children of the group
-            items.push(...groupRepos);
-        }
-
         // Add PRs, branches, tags, bookmarks as section headers only
         // Their children are added when the section is expanded
         if (this.pullRequests.length > 0) {
@@ -303,6 +290,23 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
         if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
             items.push(new SectionItem('tags', 'Tags', 'tag'));
+        }
+
+        // Add groups with their repos (user-accessible only)
+        const groupsWithRepos = this.groups.filter((group) => {
+            const groupRepos = this.getReposForGroup(group);
+            return groupRepos.length > 0;
+        });
+
+        if (groupsWithRepos.length > 0) {
+            items.push(new SectionItem('groups', 'Groups', 'symbol-folder'));
+            for (const group of groupsWithRepos) {
+                const groupRepos = this.getReposForGroup(group);
+                const isSelected = this.selectedGroups.has(String(group.group_id));
+                items.push(new GroupItem(group, groupRepos.length, isSelected));
+                // Add repos as children of the group
+                items.push(...groupRepos);
+            }
         }
 
         return items;
