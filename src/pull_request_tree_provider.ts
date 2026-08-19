@@ -267,6 +267,12 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([name, sha]) => new RefItem('tag', name, sha));
                 }
+                case 'bookmarks': {
+                    const bookmarks = this.refs?.bookmarks ?? {};
+                    return Object.entries(bookmarks)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([name, sha]) => new RefItem('branch', name, sha));
+                }
                 default:
                     return [];
             }
@@ -292,13 +298,24 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             items.push(new SectionItem('tags', 'Tags', 'tag'));
         }
 
+        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
+            items.push(new SectionItem('bookmarks', 'Bookmarks', 'star-empty'));
+        }
+
         // Add groups with their repos (user-accessible only)
+        // Only show groups that have at least one repo the user can access
         const groupsWithRepos = this.groups.filter((group) => {
             const groupRepos = this.getReposForGroup(group);
+            logDebug(
+                `Group "${group.group_name}" has ${groupRepos.length} accessible repo${groupRepos.length !== 1 ? 's' : ''}`,
+            );
             return groupRepos.length > 0;
         });
 
         if (groupsWithRepos.length > 0) {
+            logDebug(
+                `Showing ${groupsWithRepos.length} group${groupsWithRepos.length !== 1 ? 's' : ''} with accessible repos`,
+            );
             items.push(new SectionItem('groups', 'Groups', 'symbol-folder'));
             for (const group of groupsWithRepos) {
                 const groupRepos = this.getReposForGroup(group);
@@ -307,6 +324,8 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 // Add repos as children of the group
                 items.push(...groupRepos);
             }
+        } else {
+            logDebug('No groups with accessible repos found');
         }
 
         return items;
@@ -359,31 +378,13 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     /** Get branch items with highlighting for the current branch. */
     private getBranchItems(): vscode.TreeItem[] {
-        const items: vscode.TreeItem[] = [];
-
-        // Add branches first
         const branches = this.refs?.branches ?? {};
-        const branchEntries = Object.entries(branches)
+        return Object.entries(branches)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([name, sha]) => {
                 const isCurrent = name === this.currentBranch;
                 return new RefItem('branch', name, sha, isCurrent);
             });
-        items.push(...branchEntries);
-
-        // Add bookmarks after branches
-        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
-            const bookmarks = this.refs.bookmarks;
-            const bookmarkEntries = Object.entries(bookmarks)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([name, sha]) => {
-                    // Bookmarks can't be the current branch (they're refs on the server)
-                    return new RefItem('branch', name, sha, false);
-                });
-            items.push(...bookmarkEntries);
-        }
-
-        return items;
     }
 
     /** Get the PR for a specific branch, if one exists. */

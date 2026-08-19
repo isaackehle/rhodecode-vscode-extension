@@ -207,6 +207,7 @@ export class RhodeCodeClient {
     async getRepoGroups(): Promise<RepoGroup[]> {
         const data = await this.post<RepoGroup[]>('get_repo_groups', {});
         this.throwIfError(data);
+        logDebug(`get_repo_groups: returned ${data.result?.length ?? 0} groups`);
         return data.result ?? [];
     }
 
@@ -217,6 +218,7 @@ export class RhodeCodeClient {
     async getRepos(): Promise<RepoInfo[]> {
         const data = await this.post<RepoInfo[]>('get_repos', {});
         this.throwIfError(data);
+        logDebug(`get_repos: returned ${data.result?.length ?? 0} repos`);
         return data.result ?? [];
     }
 
