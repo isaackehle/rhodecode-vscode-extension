@@ -55,7 +55,7 @@ export class RefItem extends vscode.TreeItem {
         super(name, vscode.TreeItemCollapsibleState.None);
         this.id = `${kind}-${name}`;
         this.contextValue = isCurrent ? `${kind}-current` : kind;
-        this.description = isCurrent ? `🎯 ${sha.slice(0, 8)}` : sha.slice(0, 8);
+        this.description = sha.slice(0, 8);
         this.tooltip = `${kind}: ${name}${isCurrent ? ' (current)' : ''}\n${sha}`;
         this.iconPath = isCurrent
             ? new vscode.ThemeIcon('target')
@@ -357,6 +357,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             const displayName = parts[parts.length - 1];
             const node = new GroupNode(group, displayName);
             groupMap.set(group.group_name, node);
+            logDebug(`buildGroupHierarchy: Created node "${displayName}" for "${group.group_name}"`);
         }
 
         // Link parent-child relationships
@@ -402,16 +403,18 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private renderGroupNode(node: GroupNode): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
 
-        // Count total repos (including nested group repos)
-        const totalRepos = this.countReposInNode(node);
+        // Count repos for this group level only (not including children)
+        const totalRepos = node.repos.length;
         const isSelected = this.selectedGroups.has(String(node.group.group_id));
 
         // Add group item
         const groupItem = new GroupItem(node.group, totalRepos, isSelected, node.displayName);
         items.push(groupItem);
 
-        // Add repos directly under this group
-        items.push(...node.repos);
+        // Add repos directly under this group (only this level, not children)
+        if (node.repos.length > 0) {
+            items.push(...node.repos);
+        }
 
         // Recursively add child groups and their repos
         const sortedChildren = node.children.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -420,15 +423,6 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         }
 
         return items;
-    }
-
-    /** Count total repos in a node and all its descendants. */
-    private countReposInNode(node: GroupNode): number {
-        let count = node.repos.length;
-        for (const child of node.children) {
-            count += this.countReposInNode(child);
-        }
-        return count;
     }
 
     /** Get repos that belong to a specific group. */
