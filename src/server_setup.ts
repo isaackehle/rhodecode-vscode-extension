@@ -147,7 +147,7 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
                         return;
                     }
                     // Repository selected
-                    const name = picked.label.replace(/^\$\$\(repo\)\s+/, '');
+                    const name = picked.label.replace(/^\$(repo)\s+/, '');
                     const prefix = current ? current + '/' : '';
                     result = repos.find(
                         (r) => r.repo_name.split('/').pop() === name && r.repo_name.startsWith(prefix),
