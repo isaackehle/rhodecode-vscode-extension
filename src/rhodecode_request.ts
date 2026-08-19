@@ -115,6 +115,30 @@ export class RhodeCodeClient {
         this.repoName = repoName;
     }
 
+    /**
+     * Create an inline comment on a specific line in a file (RhodeCode API comment_commit).
+     * This creates a proper inline comment that can be linked to in the PR view.
+     */
+    async commentOnCommit(
+        commitId: string,
+        message: string,
+        filepath: string,
+        lineno: number,
+        commentType: 'note' | 'todo' = 'note',
+    ): Promise<CommentResult> {
+        const args: Record<string, unknown> = {
+            repoid: this.repoId,
+            commit_id: commitId,
+            message,
+            filepath,
+            lineno: String(lineno),
+            comment_type: commentType,
+        };
+        const data = await this.post<CommentResult>('comment_commit', args);
+        this.throwIfError(data);
+        return data.result!;
+    }
+
     async commentOnPullRequest(
         pullRequestId: string | number,
         message: string,

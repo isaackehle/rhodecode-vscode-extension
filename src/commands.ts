@@ -511,13 +511,23 @@ export function registerCommands(
                 return;
             }
             try {
-                // Use commentOnPullRequest with line number info in the message
-                const fullMessage = `@line:${line} ${message}`;
-                logClick(`Posting message to PR #${pr.pull_request_id}`);
-                await client.commentOnPullRequest(pr.pull_request_id, fullMessage);
+                // Use commentOnCommit to create a proper inline comment
+                // Get the last commit SHA for the PR's source branch
+                const refs = await client.getRepoRefs();
+                const commitId = refs.branches[pr.source.reference.name] || refs.bookmarks[pr.source.reference.name];
+                if (!commitId) {
+                    logWarn('Could not get commit ID for inline comment');
+                    vscode.window.showWarningMessage('Could not create inline comment. Using regular comment instead.');
+                    // Fallback to regular comment
+                    const fullMessage = `@line:${line} ${message}`;
+                    await client.commentOnPullRequest(pr.pull_request_id, fullMessage);
+                } else {
+                    logClick(`Creating inline comment on commit ${commitId.slice(0, 8)}...`);
+                    await client.commentOnCommit(commitId, message, filePath, line);
+                    logClick('Inline comment added successfully');
+                    vscode.window.showInformationMessage('Inline comment added.');
+                }
                 await tree?.invalidateComments(pr);
-                logClick('Message added successfully');
-                vscode.window.showInformationMessage('Message added.');
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 logError(`Failed to add message to PR #${pr.pull_request_id}: ${message}`);
