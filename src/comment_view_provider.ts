@@ -15,7 +15,7 @@ interface DisplayComment {
     resolved: boolean;
     statusLabel: string | null;
     location: string | null; // file:line for inline comments
-    lineNumber: number | null; // extracted from @line:X prefix
+    lineNumber: number | null; // extracted from @line:X prefix or from comment_lineno
 }
 
 /**
@@ -60,7 +60,13 @@ export class CommentViewProvider {
         await this.render();
     }
 
-    private async handleMessage(message: { type: string; commentId?: string; text?: string }): Promise<void> {
+    private async handleMessage(message: {
+        type: string;
+        commentId?: string;
+        text?: string;
+        file?: string;
+        line?: number;
+    }): Promise<void> {
         if (!this.pr) {
             return;
         }
@@ -125,6 +131,13 @@ export class CommentViewProvider {
                     await this.render();
                     break;
                 }
+                case 'openFile': {
+                    if (!message.file) {
+                        return;
+                    }
+                    await openFileAtLine(message.file, message.line || 0);
+                    break;
+                }
                 default:
                     break;
             }
@@ -153,8 +166,8 @@ export class CommentViewProvider {
                 isTodo: c.commentType === 'todo',
                 resolved: c.resolved,
                 statusLabel: c.statusChange,
-                location: null,
-                lineNumber: null,
+                location: c.location || null,
+                lineNumber: c.lineNumber || null,
             }));
         }
     }
@@ -247,9 +260,18 @@ ${rows}
   document.getElementById('reply').addEventListener('click', () => post('reply'));
   document.body.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const commentId = btn.getAttribute('data-comment');
-    post(btn.getAttribute('data-action'), commentId);
+    if (btn) {
+      const commentId = btn.getAttribute('data-comment');
+      post(btn.getAttribute('data-action'), commentId);
+      return;
+    }
+    const link = e.target.closest('a[data-file]');
+    if (link) {
+      e.preventDefault();
+      const file = link.getAttribute('data-file');
+      const line = parseInt(link.getAttribute('data-line') || '0', 10);
+      vscode.postMessage({ type: 'openFile', file, line });
+    }
   });
 })();
 </script>
@@ -275,7 +297,12 @@ ${rows}
             : '';
         const handledBadge = handled ? '<span class="badge handled">handled</span>' : '';
         const statusBadge = comment.statusLabel ? `<span class="badge">${escapeHtml(comment.statusLabel)}</span>` : '';
-        const location = comment.location ? `<div class="location">${escapeHtml(comment.location)}</div>` : '';
+        const location = comment.location
+            ? `<div class="location">
+                 ${comment.lineNumber ? `<span class="badge line">line ${comment.lineNumber}</span>` : ''}
+                 <a href="#" data-file="${escapeHtml(comment.location)}" data-line="${comment.lineNumber || 0}">${escapeHtml(comment.location)}</a>
+               </div>`
+            : '';
         const lineBadge = comment.lineNumber ? `<span class="badge line">line ${comment.lineNumber}</span>` : '';
 
         let actions = '';
@@ -317,11 +344,14 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
     const statusLabel = c.comment_status && 'status_lbl' in c.comment_status ? c.comment_status.status_lbl : null;
     const location = c.comment_f_path ? `${c.comment_f_path}${c.comment_lineno ? ':' + c.comment_lineno : ''}` : null;
 
-    // Extract line number from message if it starts with @line:X
+    // Extract line number from @line:X prefix in message, or use comment_lineno from API
     let lineNumber: number | null = null;
     const lineMatch = c.comment_text.match(/^@line:(\d+)\s+/);
     if (lineMatch) {
         lineNumber = parseInt(lineMatch[1], 10);
+    } else if (c.comment_lineno) {
+        // Use the line number from the API (for inline comments)
+        lineNumber = parseInt(String(c.comment_lineno), 10) || null;
     }
 
     return {
@@ -339,6 +369,54 @@ function toDisplayComment(c: PullRequestCommentData): DisplayComment {
 
 async function getRepoIdForStore(): Promise<string> {
     return getRepoIdRaw() ?? '';
+}
+
+/**
+ * Open a file at a specific line number in the current workspace.
+ * @param filePath - The file path (relative to workspace or absolute)
+ * @param lineNumber - The line number to jump to (0-indexed)
+ */
+async function openFileAtLine(filePath: string, lineNumber: number): Promise<void> {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+    }
+
+    // Try to resolve the file path - it might be relative or absolute
+    let fileUri: vscode.Uri;
+    if (filePath.startsWith('/')) {
+        // Absolute path
+        fileUri = vscode.Uri.file(filePath);
+    } else {
+        // Relative path - resolve against workspace folder
+        const resolvedPath = vscode.Uri.joinPath(folder.uri, filePath);
+        fileUri = resolvedPath;
+    }
+
+    // Check if file exists
+    try {
+        await vscode.workspace.fs.stat(fileUri);
+    } catch {
+        vscode.window.showErrorMessage(`File not found: ${filePath}`);
+        return;
+    }
+
+    // Open the file in the editor
+    const document = await vscode.workspace.openTextDocument(fileUri);
+    await vscode.window.showTextDocument(document, { preview: false });
+
+    // Jump to the line if specified (lineNumber is 1-indexed from the server, convert to 0-indexed)
+    if (lineNumber > 0) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            // Convert 1-indexed line number to 0-indexed position
+            const zeroIndexedLine = lineNumber - 1;
+            const position = new vscode.Position(zeroIndexedLine, 0);
+            editor.selection = new vscode.Selection(position, position);
+            editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+        }
+    }
 }
 
 function escapeHtml(s: string): string {

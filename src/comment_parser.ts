@@ -32,6 +32,8 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
             text: extractText(block),
             commentType: extractCommentType(openTag, block),
             resolved: extractResolved(block),
+            location: extractLocation(block),
+            lineNumber: extractLineNumber(block),
         });
     }
 
@@ -48,6 +50,8 @@ export function parsePullRequestComments(html: string): PullRequestComment[] {
                 text: extractText(block),
                 commentType: extractCommentType(match[0], block),
                 resolved: extractResolved(block),
+                location: extractLocation(block),
+                lineNumber: extractLineNumber(block),
             });
         }
     }
@@ -156,4 +160,65 @@ function decodeEntities(s: string): string {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&amp;/g, '&');
+}
+
+/**
+ * Extract file path and line number from inline comment markers.
+ * RhodeCode renders inline comments with file path and line number in the text.
+ * Look for patterns like "File: path/to/file.py" or "path/to/file.py:42".
+ */
+function extractLocation(block: string): string | null {
+    // Look for file path patterns in the text
+    const text = extractText(block);
+
+    // Pattern 1: "File: path/to/file.py" or "File path: path/to/file.py"
+    const filePattern = /(?:File[:\s]+|File path[:\s]+)([^\n]+)/i;
+    const fileMatch = text.match(filePattern);
+    if (fileMatch) {
+        const filePath = fileMatch[1].trim();
+        // Check if line number is included
+        const lineMatch = filePath.match(/^(.+):(\d+)$/);
+        if (lineMatch) {
+            return `${lineMatch[1].trim()}:${lineMatch[2]}`;
+        }
+        return filePath;
+    }
+
+    // Pattern 2: "path/to/file.py:42" at the start of text
+    const inlinePattern = /^([^\s]+:\d+|[\w/.-]+\.py:\d+|[\w/.-]+\.js:\d+)/;
+    const inlineMatch = text.match(inlinePattern);
+    if (inlineMatch) {
+        return inlineMatch[1];
+    }
+
+    return null;
+}
+
+/**
+ * Extract line number from inline comment markers.
+ * Look for @line:X prefix or line number in file:line pattern.
+ */
+function extractLineNumber(block: string): number | null {
+    const text = extractText(block);
+
+    // Pattern 1: @line:X prefix
+    const linePrefixPattern = /^@line:(\d+)/i;
+    const linePrefixMatch = text.match(linePrefixPattern);
+    if (linePrefixMatch) {
+        return parseInt(linePrefixMatch[1], 10);
+    }
+
+    // Pattern 2: Extract from file:line pattern
+    const location = extractLocation(block);
+    if (location) {
+        const parts = location.split(':');
+        if (parts.length > 1) {
+            const lineNum = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(lineNum) && lineNum > 0) {
+                return lineNum;
+            }
+        }
+    }
+
+    return null;
 }

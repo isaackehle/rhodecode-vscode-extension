@@ -95,6 +95,10 @@ export interface PullRequestComment {
     commentType: 'todo' | 'note' | null;
     /** True when the task comment has been resolved. */
     resolved: boolean;
+    /** File path and line number for inline comments (e.g., "path/to/file.py:42"). */
+    location: string | null;
+    /** Line number extracted from @line:X prefix or inline comment marker. */
+    lineNumber: number | null;
 }
 
 /* ------------------------------------------------------------------ */
