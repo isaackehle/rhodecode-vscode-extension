@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { RhodeCodeClient } from './rhodecode_request';
-import { RepoRefs, RhodeCodePullRequest, RepoGroup, RepoInfo } from './model/rhodecode';
-import { HandledStore } from './handled_store';
-import { setStoredRepo, getStoredRepo } from './repo_state';
-import { getCurrentBranch } from './git_remote';
 import { logDebug } from './extension';
+import { getCurrentBranch } from './git_remote';
+import { HandledStore } from './handled_store';
+import { RepoGroup, RepoInfo, RepoRefs, RhodeCodePullRequest } from './model/rhodecode';
+import { getStoredRepo, setStoredRepo } from './repo_state';
+import { RhodeCodeClient } from './rhodecode_request';
 
 /** Tree item representing a pull request in the RhodeCode view. */
 export class PullRequestItem extends vscode.TreeItem {
@@ -442,10 +442,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
         // Add a "Create PR" button if current branch has no PR
         if (this.currentBranch && !this.getPRForBranch(this.currentBranch)) {
-            const createPRItem = new vscode.TreeItem(
-                '$(plus) Create Pull Request',
-                vscode.TreeItemCollapsibleState.None,
-            );
+            const createPRItem = new vscode.TreeItem('Create Pull Request', vscode.TreeItemCollapsibleState.None);
             createPRItem.id = 'create-pr';
             createPRItem.contextValue = 'create-pr';
             createPRItem.description = `for branch "${this.currentBranch}"`;

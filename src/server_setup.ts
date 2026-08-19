@@ -78,11 +78,8 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
         return idx === -1 ? '' : path.slice(0, idx);
     };
 
-    // Collect a repo (flat result) and let the caller save it.
-    let chosen: RepoInfo | undefined;
-    let done = false;
-
-    while (!done) {
+    // Helper to build items for current path
+    const buildItems = (): vscode.QuickPickItem[] => {
         const prefix = current ? current + '/' : '';
         const subGroups = groups
             .filter((g) => (g.parent_group ?? '') === current)
@@ -109,38 +106,74 @@ export async function browseRepositories(client: RhodeCodeClient): Promise<RepoI
                 detail: r.description || undefined,
             });
         }
+        return items;
+    };
 
+    // Recursive function to navigate groups and select repo
+    const selectFromPath = async (): Promise<RepoInfo | undefined> => {
+        const items = buildItems();
         const placeHolder = current
             ? `In ${current} — type to filter, pick a group to go deeper or a repository to use it`
             : 'Pick a group or repository — type to filter';
 
-        const picked = await vscode.window.showQuickPick(items, {
-            placeHolder,
-            matchOnDescription: true,
-            matchOnDetail: true,
-            ignoreFocusOut: true,
+        const picker = vscode.window.createQuickPick();
+        picker.items = items;
+        picker.placeholder = placeHolder;
+        picker.matchOnDescription = true;
+        picker.matchOnDetail = true;
+        picker.ignoreFocusOut = true;
+        picker.show();
+
+        return new Promise<RepoInfo | undefined>((resolve) => {
+            let result: RepoInfo | undefined;
+
+            const hideHandler = () => {
+                picker.dispose();
+                resolve(result);
+            };
+
+            picker.onDidAccept(() => {
+                if (picker.selectedItems.length > 0) {
+                    const picked = picker.selectedItems[0];
+                    if (picked.label.startsWith('$(arrow-up)')) {
+                        current = goUp(current);
+                        picker.items = buildItems();
+                        return;
+                    }
+                    if (picked.label.startsWith('$(folder)')) {
+                        const name = picked.label.replace(/^\$\(folder\)\s+/, '');
+                        current = (current ? current + '/' : '') + name;
+                        picker.items = buildItems();
+                        return;
+                    }
+                    // Repository selected
+                    const name = picked.label.replace(/^\$\$\(repo\)\s+/, '');
+                    const prefix = current ? current + '/' : '';
+                    result = repos.find(
+                        (r) => r.repo_name.split('/').pop() === name && r.repo_name.startsWith(prefix),
+                    )!;
+                    hideHandler();
+                }
+            });
+
+            picker.onDidHide(() => {
+                // If picker was hidden without selection, user cancelled
+                if (!result) {
+                    hideHandler();
+                }
+            });
         });
+    };
 
-        if (!picked) {
-            done = true; // cancelled
-            continue;
+    // Navigate recursively until a repo is selected or cancelled
+    while (true) {
+        const result = await selectFromPath();
+        if (result) {
+            return result;
         }
-        if (picked.label.startsWith('$(arrow-up)')) {
-            current = goUp(current);
-            continue;
-        }
-        if (picked.label.startsWith('$(folder)')) {
-            const name = picked.label.replace(/^\$\(folder\)\s+/, '');
-            current = prefix + name;
-            continue;
-        }
-        // Repository selected
-        const name = picked.label.replace(/^\$\$\(repo\)\s+/, '');
-        chosen = repos.find((r) => r.repo_name.split('/').pop() === name && r.repo_name.startsWith(prefix))!;
-        done = true;
+        // If we get here, user cancelled - return undefined
+        return undefined;
     }
-
-    return chosen;
 }
 
 export async function promptServerUrl(prefill?: string): Promise<string | undefined> {
