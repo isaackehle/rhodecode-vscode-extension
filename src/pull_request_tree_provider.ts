@@ -14,10 +14,10 @@ export class PullRequestItem extends vscode.TreeItem {
         super(`#${pr.pull_request_id} ${pr.title}`, vscode.TreeItemCollapsibleState.None);
         this.id = `pr-${pr.pull_request_id}`;
         this.contextValue = isCurrent ? 'pullrequest-current' : 'pullrequest';
-        this.description = isCurrent ? `✓ ${pr.status} · ${pr.review_status}` : `${pr.status} · ${pr.review_status}`;
-        this.tooltip = (isCurrent ? '✓ ' : '') + (pr.description || pr.title);
+        this.description = isCurrent ? `🎯 ${pr.status} · ${pr.review_status}` : `${pr.status} · ${pr.review_status}`;
+        this.tooltip = (isCurrent ? '🎯 ' : '') + (pr.description || pr.title);
         this.iconPath = isCurrent
-            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
             : new vscode.ThemeIcon(reviewStatusIcon(pr.review_status));
         this.command = {
             command: 'rhodecode.showComments',
@@ -54,10 +54,10 @@ export class RefItem extends vscode.TreeItem {
         super(name, vscode.TreeItemCollapsibleState.None);
         this.id = `${kind}-${name}`;
         this.contextValue = isCurrent ? `${kind}-current` : kind;
-        this.description = isCurrent ? `✓ ${sha.slice(0, 8)}` : sha.slice(0, 8);
+        this.description = isCurrent ? `🎯 ${sha.slice(0, 8)}` : sha.slice(0, 8);
         this.tooltip = `${kind}: ${name}${isCurrent ? ' (current)' : ''}\n${sha}`;
         this.iconPath = isCurrent
-            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
             : new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
         this.command = {
             command: 'rhodecode.openChangeset',
@@ -77,9 +77,11 @@ export class GroupItem extends vscode.TreeItem {
         super(group.group_name, vscode.TreeItemCollapsibleState.Expanded);
         this.id = `group-${group.group_id}`;
         this.contextValue = 'group';
-        this.description = isSelected ? '✓' : `${repoCount} repo${repoCount !== 1 ? 's' : ''}`;
-        this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '✓ Selected' : `Contains ${repoCount} repository${repoCount !== 1 ? 'ies' : ''}`}`;
-        this.iconPath = isSelected ? new vscode.ThemeIcon('check') : new vscode.ThemeIcon('symbol-folder');
+        this.description = isSelected ? '🎯' : `${repoCount} repo${repoCount !== 1 ? 's' : ''}`;
+        this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '🎯 Selected' : `Contains ${repoCount} repository${repoCount !== 1 ? 'ies' : ''}`}`;
+        this.iconPath = isSelected
+            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            : new vscode.ThemeIcon('symbol-folder');
         this.command = {
             command: 'rhodecode.toggleGroup',
             title: 'Toggle Group',
@@ -232,14 +234,25 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             switch (element.sectionId) {
                 case 'pullrequests':
                     return this.getPullRequestItems();
-                case 'branches': {
-                    return this.getBranchItems();
-                }
-                case 'tags': {
-                    const tags = this.refs?.tags ?? {};
-                    return Object.entries(tags)
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([name, sha]) => new RefItem('tag', name, sha));
+                case 'branches':
+                case 'tags':
+                case 'bookmarks': {
+                    if (element.sectionId === 'branches') {
+                        return this.getBranchItems();
+                    }
+                    if (element.sectionId === 'tags') {
+                        const tags = this.refs?.tags ?? {};
+                        return Object.entries(tags)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([name, sha]) => new RefItem('tag', name, sha));
+                    }
+                    if (element.sectionId === 'bookmarks') {
+                        const bookmarks = this.refs?.bookmarks ?? {};
+                        return Object.entries(bookmarks)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([name, sha]) => new RefItem('branch', name, sha));
+                    }
+                    return [];
                 }
                 default:
                     return [];
@@ -252,43 +265,6 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private buildTree(): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
 
-        // Add PRs section first
-        if (this.pullRequests.length > 0) {
-            items.push(new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'));
-            items.push(...this.pullRequests.map((pr) => new PullRequestItem(pr)));
-        }
-
-        // Add refs sections (branches, tags, bookmarks)
-        if (this.refs?.branches && Object.keys(this.refs.branches).length > 0) {
-            items.push(new SectionItem('branches', 'Branches', 'git-branch'));
-            const branches = this.refs.branches ?? {};
-            items.push(
-                ...Object.entries(branches)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([name, sha]) => new RefItem('branch', name, sha)),
-            );
-        }
-
-        if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
-            items.push(new SectionItem('tags', 'Tags', 'tag'));
-            const tags = this.refs.tags ?? {};
-            items.push(
-                ...Object.entries(tags)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([name, sha]) => new RefItem('tag', name, sha)),
-            );
-        }
-
-        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
-            items.push(new SectionItem('bookmarks', 'Bookmarks', 'star-empty'));
-            const bookmarks = this.refs.bookmarks ?? {};
-            items.push(
-                ...Object.entries(bookmarks)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([name, sha]) => new RefItem('branch', name, sha)),
-            );
-        }
-
         // Add groups with their repos (user-accessible only)
         for (const group of this.groups) {
             const groupRepos = this.getReposForGroup(group);
@@ -300,6 +276,24 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             items.push(new GroupItem(group, groupRepos.length, isSelected));
             // Add repos as children of the group
             items.push(...groupRepos);
+        }
+
+        // Add PRs, branches, tags, bookmarks as section headers only
+        // Their children are added when the section is expanded
+        if (this.pullRequests.length > 0) {
+            items.push(new SectionItem('pullrequests', 'Pull Requests', 'git-pull-request'));
+        }
+
+        if (this.refs?.branches && Object.keys(this.refs.branches).length > 0) {
+            items.push(new SectionItem('branches', 'Branches', 'git-branch'));
+        }
+
+        if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
+            items.push(new SectionItem('tags', 'Tags', 'tag'));
+        }
+
+        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
+            items.push(new SectionItem('bookmarks', 'Bookmarks', 'star-empty'));
         }
 
         return items;
