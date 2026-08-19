@@ -14,14 +14,61 @@ import { PRStatusBar } from './pr_status_bar';
 /** Debug output channel for the extension */
 export let debugOutputChannel: vscode.OutputChannel | undefined;
 
+/** Log level constants */
+export enum LogLevel {
+    DEBUG = 'debug',
+    INFO = 'info',
+    WARN = 'warn',
+    ERROR = 'error',
+}
+
+/** Theme icons for log levels */
+const LOG_ICONS: Record<LogLevel, string> = {
+    [LogLevel.DEBUG]: '$(debug)',
+    [LogLevel.INFO]: '$(info)',
+    [LogLevel.WARN]: '$(warning)',
+    [LogLevel.ERROR]: '$(error)',
+};
+
 /**
- * Log a message to the debug output channel if debug logging is enabled.
- * This is useful for troubleshooting connection issues, API calls, etc.
+ * Log a message to the debug output channel with a level.
+ * This is useful for troubleshooting button clicks, API calls, etc.
+ */
+export function logToDebug(message: string, level: LogLevel = LogLevel.DEBUG): void {
+    if (debugOutputChannel && vscode.workspace.getConfiguration('rhodecode').get<boolean>('debug', false)) {
+        const icon = LOG_ICONS[level];
+        const timestamp = new Date().toLocaleTimeString();
+        const formattedMessage = `[${timestamp}] ${icon} [${level.toUpperCase()}] ${message}`;
+        debugOutputChannel.appendLine(formattedMessage);
+    }
+}
+
+/**
+ * Log a DEBUG level message for tracking button clicks.
+ */
+export function debugClick(message: string): void {
+    logToDebug(message, LogLevel.DEBUG);
+}
+
+/**
+ * Log a WARN level message when something fails or behaves unexpectedly.
+ */
+export function warn(message: string): void {
+    logToDebug(message, LogLevel.WARN);
+}
+
+/**
+ * Log an ERROR level message for critical failures.
+ */
+export function error(message: string): void {
+    logToDebug(message, LogLevel.ERROR);
+}
+
+/**
+ * Log a DEBUG level message (alias for debugClick for backwards compatibility).
  */
 export function debugLog(message: string): void {
-    if (debugOutputChannel && vscode.workspace.getConfiguration('rhodecode').get<boolean>('debug', false)) {
-        debugOutputChannel.appendLine(message);
-    }
+    debugClick(message);
 }
 
 /**
