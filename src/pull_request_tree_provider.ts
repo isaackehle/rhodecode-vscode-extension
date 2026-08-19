@@ -60,12 +60,22 @@ export class RefItem extends vscode.TreeItem {
         this.iconPath = isCurrent
             ? new vscode.ThemeIcon('target')
             : new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
-        // Set command based on kind - open in browser for both
-        this.command = {
-            command: kind === 'branch' ? 'rhodecode.switchBranch' : 'rhodecode.switchTag',
-            title: kind === 'branch' ? 'Switch to Branch' : 'Switch to Tag',
-            arguments: [this],
-        };
+        // Set command based on kind
+        if (kind === 'branch') {
+            // Keep switch branch command, add PR creation as a secondary action in tooltip
+            this.tooltip += '\n$(plus) Click to create PR';
+            this.command = {
+                command: 'rhodecode.switchBranch',
+                title: 'Switch to Branch',
+                arguments: [this],
+            };
+        } else {
+            this.command = {
+                command: 'rhodecode.switchTag',
+                title: 'Switch to Tag',
+                arguments: [this],
+            };
+        }
     }
 }
 

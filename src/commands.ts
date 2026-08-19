@@ -514,17 +514,29 @@ export function registerCommands(
                 return;
             }
             try {
-                logClick('Prompting for source branch name');
-                const sourceBranch = await vscode.window.showInputBox({
-                    placeHolder: 'Source branch name',
-                    prompt: 'Please enter the branch name of the source branch',
-                    value: prefillSourceBranch,
+                // Step 1: Enter PR name (not target branch)
+                const name = await vscode.window.showInputBox({
+                    placeHolder: 'Pull request name',
+                    prompt: 'Enter a name for the pull request',
+                    value: prefillSourceBranch ? `From ${prefillSourceBranch}` : '',
                 });
+                if (!name) {
+                    logWarn('PR name input cancelled by user');
+                    return;
+                }
+
+                // Step 2: Confirm details
+                const sourceBranch =
+                    prefillSourceBranch ||
+                    (await vscode.window.showInputBox({
+                        placeHolder: 'Source branch name',
+                        prompt: 'Please enter the branch name of the source branch',
+                    }));
                 if (!sourceBranch) {
                     logWarn('Source branch input cancelled by user');
                     return;
                 }
-                logClick(`Source branch: ${sourceBranch}, prompting for target branch`);
+
                 const targetBranch = await vscode.window.showInputBox({
                     placeHolder: 'Target branch name',
                     prompt: 'Please enter the branch name of the target branch',
@@ -534,20 +546,47 @@ export function registerCommands(
                     logWarn('Target branch input cancelled by user');
                     return;
                 }
-                logClick(`Target branch: ${targetBranch}, prompting for PR name`);
-                const name = await vscode.window.showInputBox({
-                    placeHolder: 'Pull request name',
-                    prompt: 'Please enter a name for your pull request',
-                    value: `From ${sourceBranch} to ${targetBranch}`,
-                });
-                if (!name) {
-                    logWarn('PR name input cancelled by user');
+
+                // Step 3: Confirmation screen
+                const confirmMsg = `Create pull request:\n\nFrom: ${sourceBranch}\nTo: ${targetBranch}\nName: ${name}\n\nClick OK to create.`;
+                const confirm = await vscode.window.showWarningMessage(confirmMsg, { modal: true }, 'OK', 'Cancel');
+                if (confirm !== 'OK') {
+                    logWarn('PR creation cancelled on confirmation screen');
                     return;
                 }
+
                 logClick(`Creating pull request: ${sourceBranch} → ${targetBranch} (${name})`);
                 await client.createPullRequest(sourceBranch, targetBranch, name);
                 logClick(`Pull request created successfully: ${name}`);
-                vscode.window.showInformationMessage('Created pull request.');
+
+                // Step 4: Show PR ID as toast
+                const prs = await client.getPullRequests();
+                const newPr = prs.find(
+                    (p) => p.source.reference.name === sourceBranch && p.target.reference.name === targetBranch,
+                );
+                if (newPr) {
+                    const prNumber = newPr.pull_request_id;
+                    const prUrl = client.pullRequestUrl(prNumber);
+                    const toast = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+                    toast.text = `$(git-pull-request) PR #${prNumber}`;
+                    toast.tooltip = `Click to open PR #${prNumber}`;
+                    toast.command = { command: 'vscode.open', title: 'Open PR', arguments: [vscode.Uri.parse(prUrl)] };
+                    toast.show();
+                    setTimeout(() => toast.hide(), 10000); // Hide after 10 seconds
+                }
+
+                // Step 5: Show PR info with tag toggles
+                const addTags = await vscode.window.showInformationMessage(
+                    `Pull request created!`,
+                    { modal: false },
+                    'Add Tags',
+                    'Done',
+                );
+                if (addTags === 'Add Tags' && newPr) {
+                    // TODO: Add tag toggles UI
+                    vscode.window.showInformationMessage('Tag toggles coming soon.');
+                }
+
                 await tree.load();
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
