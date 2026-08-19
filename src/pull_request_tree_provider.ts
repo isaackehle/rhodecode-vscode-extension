@@ -18,7 +18,7 @@ export class PullRequestItem extends vscode.TreeItem {
         this.description = isCurrent ? `🎯 ${pr.status} · ${pr.review_status}` : `${pr.status} · ${pr.review_status}`;
         this.tooltip = (isCurrent ? '🎯 ' : '') + (pr.description || pr.title);
         this.iconPath = isCurrent
-            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            ? new vscode.ThemeIcon('target')
             : new vscode.ThemeIcon(reviewStatusIcon(pr.review_status));
         this.command = {
             command: 'rhodecode.showComments',
@@ -58,7 +58,7 @@ export class RefItem extends vscode.TreeItem {
         this.description = isCurrent ? `🎯 ${sha.slice(0, 8)}` : sha.slice(0, 8);
         this.tooltip = `${kind}: ${name}${isCurrent ? ' (current)' : ''}\n${sha}`;
         this.iconPath = isCurrent
-            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            ? new vscode.ThemeIcon('target')
             : new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
         // Set command based on kind - open in browser for both
         this.command = {
@@ -86,8 +86,9 @@ export class GroupItem extends vscode.TreeItem {
         public readonly group: RepoGroup,
         public readonly repoCount: number,
         public readonly isSelected: boolean,
+        public readonly displayName: string = group.group_name,
     ) {
-        super(group.group_name, vscode.TreeItemCollapsibleState.Expanded);
+        super(displayName, vscode.TreeItemCollapsibleState.Expanded);
         this.id = `group-${group.group_id}`;
         this.contextValue = 'group';
         this.description = isSelected ? '🎯' : `${repoCount} repo${repoCount !== 1 ? 's' : ''}`;
@@ -101,6 +102,18 @@ export class GroupItem extends vscode.TreeItem {
             arguments: [this],
         };
     }
+}
+
+/** Internal tree node for building group hierarchy. */
+class GroupNode {
+    constructor(
+        public readonly group: RepoGroup,
+        public readonly displayName: string,
+        public parent: GroupNode | null = null,
+    ) {}
+
+    children: GroupNode[] = [];
+    repos: RepoItem[] = [];
 }
 
 /** A repository item in the tree view. */
@@ -277,17 +290,11 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                         .map(([name, sha]) => new RefItem('branch', name, sha));
                 }
                 case 'groups': {
-                    // Return groups with their repos
-                    const groupsWithRepos = this.groups.filter((group) => {
-                        const groupRepos = this.getReposForGroup(group);
-                        return groupRepos.length > 0;
-                    });
+                    // Build hierarchical group structure
+                    const rootNodes = this.buildGroupHierarchy();
                     const items: vscode.TreeItem[] = [];
-                    for (const group of groupsWithRepos) {
-                        const groupRepos = this.getReposForGroup(group);
-                        const isSelected = this.selectedGroups.has(String(group.group_id));
-                        items.push(new GroupItem(group, groupRepos.length, isSelected));
-                        items.push(...groupRepos);
+                    for (const node of rootNodes) {
+                        items.push(...this.renderGroupNode(node));
                     }
                     return items;
                 }
@@ -339,6 +346,89 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
         logDebug(`buildTree(): Returning ${items.length} top-level items`);
         return items;
+    }
+
+    /** Build hierarchical group structure from flat group list. */
+    private buildGroupHierarchy(): GroupNode[] {
+        // Create nodes for all groups
+        const groupMap = new Map<string, GroupNode>();
+        for (const group of this.groups) {
+            const parts = group.group_name.split('/');
+            const displayName = parts[parts.length - 1];
+            const node = new GroupNode(group, displayName);
+            groupMap.set(group.group_name, node);
+        }
+
+        // Link parent-child relationships
+        for (const [groupName, node] of groupMap) {
+            const parts = groupName.split('/');
+            if (parts.length > 1) {
+                const parentName = parts.slice(0, -1).join('/');
+                const parentNode = groupMap.get(parentName);
+                if (parentNode) {
+                    parentNode.children.push(node);
+                    node.parent = parentNode;
+                }
+            }
+        }
+
+        // Collect repos for each group
+        for (const node of groupMap.values()) {
+            const groupPath = `${node.group.group_name}/`;
+            const groupRepos = this.repos.filter((repo) => repo.repo_name.startsWith(groupPath));
+            for (const repo of groupRepos) {
+                // Flatten repo name by removing the group path prefix
+                const relativeName = repo.repo_name.substring(groupPath.length);
+                const repoWithFlattenedName = new RepoItem({
+                    ...repo,
+                    repo_name: relativeName,
+                });
+                node.repos.push(repoWithFlattenedName);
+            }
+        }
+
+        // Return root nodes (groups with no parent or parent doesn't exist)
+        const rootNodes: GroupNode[] = [];
+        for (const node of groupMap.values()) {
+            if (!node.parent || !groupMap.has(node.parent.group.group_name)) {
+                rootNodes.push(node);
+            }
+        }
+
+        return rootNodes.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    }
+
+    /** Render a group node and its children recursively. */
+    private renderGroupNode(node: GroupNode): vscode.TreeItem[] {
+        const items: vscode.TreeItem[] = [];
+
+        // Count total repos (including nested group repos)
+        const totalRepos = this.countReposInNode(node);
+        const isSelected = this.selectedGroups.has(String(node.group.group_id));
+
+        // Add group item
+        const groupItem = new GroupItem(node.group, totalRepos, isSelected, node.displayName);
+        items.push(groupItem);
+
+        // Add repos directly under this group
+        items.push(...node.repos);
+
+        // Recursively add child groups and their repos
+        const sortedChildren = node.children.sort((a, b) => a.displayName.localeCompare(b.displayName));
+        for (const child of sortedChildren) {
+            items.push(...this.renderGroupNode(child));
+        }
+
+        return items;
+    }
+
+    /** Count total repos in a node and all its descendants. */
+    private countReposInNode(node: GroupNode): number {
+        let count = node.repos.length;
+        for (const child of node.children) {
+            count += this.countReposInNode(child);
+        }
+        return count;
     }
 
     /** Get repos that belong to a specific group. */
