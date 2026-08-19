@@ -69,6 +69,17 @@ export class RefItem extends vscode.TreeItem {
     }
 }
 
+/** A collapsible node for the Branches section. */
+export class BranchesSectionItem extends vscode.TreeItem {
+    constructor(public readonly sectionId: string) {
+        super('Branches', vscode.TreeItemCollapsibleState.Expanded);
+        this.id = `section-${sectionId}`;
+        this.contextValue = 'section';
+        this.iconPath = new vscode.ThemeIcon('git-branch');
+        this.description = 'branches + bookmarks';
+    }
+}
+
 /** A group as a folder in the tree view (Issue #19). */
 export class GroupItem extends vscode.TreeItem {
     constructor(
@@ -238,29 +249,19 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             return this.getReposForGroup(element.group);
         }
 
-        if (element instanceof SectionItem) {
+        if (element instanceof SectionItem || element instanceof BranchesSectionItem) {
             switch (element.sectionId) {
                 case 'pullrequests':
                     return this.getPullRequestItems();
-                case 'branches':
-                case 'tags':
-                case 'bookmarks': {
-                    if (element.sectionId === 'branches') {
-                        return this.getBranchItems();
-                    }
-                    if (element.sectionId === 'tags') {
-                        const tags = this.refs?.tags ?? {};
-                        return Object.entries(tags)
-                            .sort(([a], [b]) => a.localeCompare(b))
-                            .map(([name, sha]) => new RefItem('tag', name, sha));
-                    }
-                    if (element.sectionId === 'bookmarks') {
-                        const bookmarks = this.refs?.bookmarks ?? {};
-                        return Object.entries(bookmarks)
-                            .sort(([a], [b]) => a.localeCompare(b))
-                            .map(([name, sha]) => new RefItem('branch', name, sha));
-                    }
-                    return [];
+                case 'branches': {
+                    // Return combined branches and bookmarks under the Branches section
+                    return this.getBranchItems();
+                }
+                case 'tags': {
+                    const tags = this.refs?.tags ?? {};
+                    return Object.entries(tags)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([name, sha]) => new RefItem('tag', name, sha));
                 }
                 default:
                     return [];
@@ -293,15 +294,11 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         }
 
         if (this.refs?.branches && Object.keys(this.refs.branches).length > 0) {
-            items.push(new SectionItem('branches', 'Branches', 'git-branch'));
+            items.push(new BranchesSectionItem('branches'));
         }
 
         if (this.refs?.tags && Object.keys(this.refs.tags).length > 0) {
             items.push(new SectionItem('tags', 'Tags', 'tag'));
-        }
-
-        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
-            items.push(new SectionItem('bookmarks', 'Bookmarks', 'star-empty'));
         }
 
         return items;
@@ -354,13 +351,31 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     /** Get branch items with highlighting for the current branch. */
     private getBranchItems(): vscode.TreeItem[] {
+        const items: vscode.TreeItem[] = [];
+
+        // Add branches first
         const branches = this.refs?.branches ?? {};
-        return Object.entries(branches)
+        const branchEntries = Object.entries(branches)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([name, sha]) => {
                 const isCurrent = name === this.currentBranch;
                 return new RefItem('branch', name, sha, isCurrent);
             });
+        items.push(...branchEntries);
+
+        // Add bookmarks after branches
+        if (this.refs?.bookmarks && Object.keys(this.refs.bookmarks).length > 0) {
+            const bookmarks = this.refs.bookmarks;
+            const bookmarkEntries = Object.entries(bookmarks)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([name, sha]) => {
+                    // Bookmarks can't be the current branch (they're refs on the server)
+                    return new RefItem('branch', name, sha, false);
+                });
+            items.push(...bookmarkEntries);
+        }
+
+        return items;
     }
 
     /** Get the PR for a specific branch, if one exists. */
