@@ -78,11 +78,33 @@ bun run clean        # remove out/, .vscode-test/, .rumdl_cache/, and *.vsix
 
 - Every release gets an annotated git tag `v<version>` on the commit that bumps `package.json` version, plus a GitHub
   Release with the `.vsix` attached.
+- **Critical: `package.json` version must match the tag.** When releasing:
+  1. If making a change + release (patch/minor/major) in the same commit, bump `package.json` version first
+  2. Always verify tag ↔ package.json version alignment before pushing
+  3. If they don't align, ask to clarify which is correct
+  4. If the tag already exists (previously deployed), force-push it to the new commit
+  5. When `package.json` version changes, rebuild the `.vsix` (`bun run package`) to ensure version sync
+
 - When you bump the version, tag it in the same step:
 
   ```shell
-  git tag -a v0.7.0 -m "v0.7.0: <one-line summary>"
+  # Bump version in package.json
+  git add package.json && git commit -m "chore: bump version to X.Y.Z"
+  
+  # Tag and verify alignment
+  git tag -a vX.Y.Z -m "vX.Y.Z: <one-line summary>"
   git push origin master --tags
+  
+  # Rebuild vsix to ensure version sync
+  bun run package
+  ```
+
+- If a tag already exists and needs to be moved:
+
+  ```shell
+  git tag -d vX.Y.Z
+  git tag -a vX.Y.Z -m "vX.Y.Z: <one-line summary>"
+  git push origin vX.Y.Z --force
   ```
 
 - The GitHub Release body is the CHANGELOG entry for that version; attach the packaged `.vsix` (`bun run package`).
