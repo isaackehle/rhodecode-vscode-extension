@@ -333,5 +333,5 @@
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
     },
-    "version": "0.18.2"
+    "version": "0.18.3"
 }
