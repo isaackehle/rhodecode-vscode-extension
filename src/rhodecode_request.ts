@@ -1,6 +1,6 @@
 import { window } from 'vscode';
 import * as config from './configuration';
-import { getRepoIdRaw } from './repo_state';
+import { getStoredRepo } from './repo_state';
 import { logDebug } from './extension';
 import {
     CommentResult,
@@ -17,24 +17,34 @@ import {
  * Endpoint: POST {serverUrl}/_admin/api with { id, api_key, method, args }.
  */
 export class RhodeCodeClient {
-    private readonly serverUrl: string;
-    private readonly apiKey: string;
-    private readonly repoId: string;
+    private serverUrl: string;
+    private apiKey: string;
+    private repoId: number; // Integer ID for API calls
+    private repoName: string; // Path for URLs
 
-    constructor(serverUrl: string, apiKey: string, repoId: string) {
+    constructor(serverUrl: string, apiKey: string, repoId: number | string, repoName?: string) {
         this.serverUrl = serverUrl;
         this.apiKey = apiKey;
-        this.repoId = repoId;
+        // Accept either integer ID or string path; convert if needed
+        if (typeof repoId === 'string') {
+            // If it's a string path (e.g., 'ES-CCMCS/SDR'), store it for URLs
+            this.repoName = repoId;
+            this.repoId = 0; // Placeholder; will be updated when repo_id is known
+        } else {
+            this.repoId = repoId;
+            this.repoName = repoName || String(repoId);
+        }
     }
 
     static async create(): Promise<RhodeCodeClient | undefined> {
         const serverUrl = await config.getApiUrl();
         const apiKey = await config.getApiKey();
-        const repoId = getRepoIdRaw();
-        if (!serverUrl || !apiKey || !repoId) {
+        const storedRepo = getStoredRepo();
+        if (!serverUrl || !apiKey || !storedRepo) {
             return undefined;
         }
-        return new RhodeCodeClient(serverUrl, apiKey, repoId);
+        // Use the integer repo_id from stored repo
+        return new RhodeCodeClient(serverUrl, apiKey, storedRepo.repo_id, storedRepo.repo_name);
     }
 
     /**
@@ -97,6 +107,12 @@ export class RhodeCodeClient {
         });
         this.throwIfError(data);
         return data.result ?? [];
+    }
+
+    /** Set the repo ID after it's been resolved from the path. */
+    setRepoId(repoId: number, repoName: string): void {
+        this.repoId = repoId;
+        this.repoName = repoName;
     }
 
     async commentOnPullRequest(
@@ -244,7 +260,7 @@ export class RhodeCodeClient {
      * full comment thread (the JSON-RPC API has no "list comments" method).
      */
     async getPullRequestPage(pullRequestId: string | number): Promise<string> {
-        const url = `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}?api_key=${encodeURIComponent(this.apiKey)}`;
+        const url = `${this.serverUrl}/${encodeURIComponent(this.repoName)}/pull-request/${pullRequestId}?api_key=${encodeURIComponent(this.apiKey)}`;
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 30000);
         let response: Response;
@@ -262,11 +278,11 @@ export class RhodeCodeClient {
     }
 
     pullRequestUrl(pullRequestId: string | number): string {
-        return `${this.serverUrl}/${encodeURIComponent(this.repoId)}/pull-request/${pullRequestId}`;
+        return `${this.serverUrl}/${encodeURIComponent(this.repoName)}/pull-request/${pullRequestId}`;
     }
 
     changesetUrl(sha: string): string {
-        return `${this.serverUrl}/${encodeURIComponent(this.repoId)}/changeset/${sha}`;
+        return `${this.serverUrl}/${encodeURIComponent(this.repoName)}/changeset/${sha}`;
     }
 
     getServerUrl(): string {

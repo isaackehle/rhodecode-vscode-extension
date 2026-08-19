@@ -475,17 +475,36 @@ export function registerCommands(
                 );
                 return;
             }
-            const pr = await pickPullRequest(client);
-            if (!pr) {
-                logWarn('No pull request selected for adding message');
+            // Get the current PR instead of prompting user to select
+            const folder = vscode.workspace.workspaceFolders?.[0];
+            if (!folder) {
+                logWarn('No workspace folder found for adding message');
                 return;
+            }
+            const currentBranch = await getCurrentBranch(folder.uri.fsPath);
+            let pr: RhodeCodePullRequest | undefined;
+            if (currentBranch && tree) {
+                pr = tree.getPRForBranch(currentBranch);
+            }
+            if (!pr) {
+                // Fall back to picking a PR if no current PR found
+                logWarn('No current PR found, prompting user to select');
+                pr = await pickPullRequest(client);
+                if (!pr) {
+                    logWarn('No pull request selected for adding message');
+                    return;
+                }
             }
             const line = editor.selection.active.line + 1;
             const filePath = editor.document.fileName;
             logClick(`Adding message to line ${line} in ${filePath} on PR #${pr.pull_request_id}`);
+
+            // Use a dialog with TextArea for multi-line input
             const message = await vscode.window.showInputBox({
                 prompt: `Add a message to line ${line} in ${filePath} on PR #${pr.pull_request_id}`,
-                placeHolder: 'Your message',
+                placeHolder: 'Your message (multi-line supported, Cmd/Ctrl+Enter to save)',
+                value: '',
+                ignoreFocusOut: true,
             });
             if (!message) {
                 logWarn('Message input cancelled by user');
@@ -496,7 +515,7 @@ export function registerCommands(
                 const fullMessage = `@line:${line} ${message}`;
                 logClick(`Posting message to PR #${pr.pull_request_id}`);
                 await client.commentOnPullRequest(pr.pull_request_id, fullMessage);
-                await tree.invalidateComments(pr);
+                await tree?.invalidateComments(pr);
                 logClick('Message added successfully');
                 vscode.window.showInformationMessage('Message added.');
             } catch (err) {

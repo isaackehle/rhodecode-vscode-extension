@@ -489,7 +489,7 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     }
 
     /** Get the PR for a specific branch, if one exists. */
-    private getPRForBranch(branchName: string): RhodeCodePullRequest | undefined {
+    public getPRForBranch(branchName: string): RhodeCodePullRequest | undefined {
         return this.pullRequests.find((pr) => pr.source.reference.name === branchName);
     }
 
