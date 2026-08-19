@@ -184,45 +184,33 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     async load(): Promise<void> {
         const client = this.getClient();
         if (!client) {
-            logDebug('load(): no client available, skipping');
             return;
         }
-        logDebug('Starting load()...');
         try {
-            logDebug('Loading pull requests...');
             this.pullRequests = await client.getPullRequests();
-            logDebug(`Pull requests loaded: ${this.pullRequests.length} PRs`);
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            logDebug(`Failed to load pull requests: ${message}`);
+            logDebug(`Failed to load pull requests: ${err instanceof Error ? err.message : String(err)}`);
             this.pullRequests = [];
         }
         // Refs are best-effort: PR listing should not fail because of them.
         try {
-            logDebug('Loading branches and tags...');
             this.refs = await client.getRepoRefs();
-            logDebug('Branches and tags loaded successfully');
-        } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            logDebug(`Failed to load branches and tags: ${message}`);
+        } catch {
+            logDebug('Failed to load branches and tags');
             this.refs = undefined;
         }
         // Load groups and repos
         try {
-            logDebug('Loading groups and repos...');
             this.groups = await client.getRepoGroups();
             this.repos = await client.getRepos();
-            logDebug(`Groups and repos loaded successfully: ${this.groups.length} groups, ${this.repos.length} repos`);
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            logDebug(`Failed to load groups and repos: ${message}`);
+            logDebug(`Failed to load groups and repos: ${err instanceof Error ? err.message : String(err)}`);
             this.groups = [];
             this.repos = [];
         }
         // Update current branch
         await this.updateCurrentBranch();
         this._onDidChangeTreeData.fire();
-        logDebug('load() complete');
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
