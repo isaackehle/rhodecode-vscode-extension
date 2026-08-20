@@ -409,6 +409,17 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         return rootNodes.sort((a, b) => a.displayName.localeCompare(b.displayName));
     }
 
+    /** Get the full display path for a group node (e.g., "GroupA/SubgroupB"). */
+    private getGroupFullPath(node: GroupNode): string {
+        const parts: string[] = [];
+        let current: GroupNode | null = node;
+        while (current) {
+            parts.unshift(current.displayName);
+            current = current.parent;
+        }
+        return parts.join('/');
+    }
+
     /** Render a group node and its children recursively. */
     private renderGroupNode(node: GroupNode): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
@@ -417,8 +428,9 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         const totalRepos = node.repos.length;
         const isSelected = this.selectedGroups.has(String(node.group.group_id));
 
-        // Add group item
-        const groupItem = new GroupItem(node.group, totalRepos, isSelected, node.displayName);
+        // Add group item - use full path for non-root groups
+        const displayLabel = node.parent ? this.getGroupFullPath(node) : node.displayName;
+        const groupItem = new GroupItem(node.group, totalRepos, isSelected, displayLabel);
         items.push(groupItem);
 
         // Add repos directly under this group (only this level, not children)
