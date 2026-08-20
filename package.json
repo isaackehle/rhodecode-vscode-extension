@@ -1,31 +1,48 @@
 {
-    "activationEvents": [
-        "onCommand:rhodecode.addMessage",
-        "onCommand:rhodecode.approveAndMerge",
-        "onCommand:rhodecode.connect",
-        "onCommand:rhodecode.createPrForCurrentBranch",
-        "onCommand:rhodecode.createPullRequest",
-        "onCommand:rhodecode.markHandled",
-        "onCommand:rhodecode.markUnhandled",
-        "onCommand:rhodecode.openChangeset",
-        "onCommand:rhodecode.openCurrentBranchPr",
-        "onCommand:rhodecode.openDebugOutput",
-        "onCommand:rhodecode.openPullRequest",
-        "onCommand:rhodecode.openRepoBrowser",
-        "onCommand:rhodecode.refresh",
-        "onCommand:rhodecode.replyComment",
-        "onCommand:rhodecode.selectRepoFromTree",
-        "onCommand:rhodecode.selectRepository",
-        "onCommand:rhodecode.showComments",
-        "onCommand:rhodecode.showPullRequests",
-        "onCommand:rhodecode.switchBranch",
-        "onCommand:rhodecode.switchTag",
-        "onCommand:rhodecode.toggleGroup",
-        "onView:rhodecode.pullRequests"
-    ],
+    "name": "rhodecode-vscode-extension",
+    "displayName": "RhodeCode",
+    "version": "0.19.3",
+    "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
     "categories": [
         "Other"
     ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/isaackehle/rhodecode-vscode-extension.git"
+    },
+    "publisher": "isaackehle",
+    "main": "./out/extension",
+    "scripts": {
+        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete",
+        "compile": "tsc -p ./",
+        "format": "oxfmt --write \"src/**/*.ts\"",
+        "format:check": "oxfmt --check \"src/**/*.ts\"",
+        "format:md": "rumdl fmt .",
+        "lint": "oxlint src",
+        "lint:md": "rumdl check .",
+        "package": "vsce package --no-dependencies",
+        "release": "./scripts/release.sh",
+        "test": "bun run scripts/run-tests.cjs",
+        "test:integration": "node out/test/runTests.js",
+        "test:unit": "bun test",
+        "vscode:prepublish": "bun run compile",
+        "watch": "tsc -watch -p ./"
+    },
+    "dependencies": {
+        "@types/mocha": "^10.0.10",
+        "glob": "^13.0.6",
+        "mocha": "^11.8.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@types/vscode": "^1.80.0",
+        "@vscode/test-electron": "^3.1.0",
+        "@vscode/vsce": "^3.9.2",
+        "oxfmt": "^0.62.0",
+        "oxlint": "^1.77.0",
+        "typescript": "^5.4.0",
+        "vscode-test": "^1.6.1"
+    },
     "contributes": {
         "commands": [
             {
@@ -33,12 +50,6 @@
                 "command": "rhodecode.refresh",
                 "icon": "$(refresh)",
                 "title": "Refresh"
-            },
-            {
-                "category": "RhodeCode",
-                "command": "rhodecode.showPullRequests",
-                "icon": "$(git-pull-request)",
-                "title": "Show Pull Requests"
             },
             {
                 "category": "RhodeCode",
@@ -246,23 +257,8 @@
                     "when": "view == rhodecode.pullRequests"
                 },
                 {
-                    "command": "rhodecode.showPullRequests",
-                    "group": "navigation",
-                    "when": "view == rhodecode.pullRequests"
-                },
-                {
-                    "command": "rhodecode.connect",
-                    "group": "navigation@2",
-                    "when": "view == rhodecode.pullRequests"
-                },
-                {
-                    "command": "rhodecode.selectRepository",
-                    "group": "navigation@3",
-                    "when": "view == rhodecode.pullRequests"
-                },
-                {
                     "command": "rhodecode.openRepoBrowser",
-                    "group": "navigation@4",
+                    "group": "navigation@2",
                     "when": "view == rhodecode.pullRequests"
                 }
             ]
@@ -294,49 +290,31 @@
             }
         ]
     },
-    "dependencies": {
-        "@types/mocha": "^10.0.10",
-        "glob": "^13.0.6",
-        "mocha": "^11.8.0"
-    },
-    "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
-    "devDependencies": {
-        "@types/node": "^20.11.0",
-        "@types/vscode": "^1.80.0",
-        "@vscode/test-electron": "^3.1.0",
-        "@vscode/vsce": "^3.9.2",
-        "oxfmt": "^0.62.0",
-        "oxlint": "^1.77.0",
-        "typescript": "^5.4.0",
-        "vscode-test": "^1.6.1"
-    },
-    "displayName": "RhodeCode",
+    "activationEvents": [
+        "onCommand:rhodecode.addMessage",
+        "onCommand:rhodecode.approveAndMerge",
+        "onCommand:rhodecode.connect",
+        "onCommand:rhodecode.createPrForCurrentBranch",
+        "onCommand:rhodecode.createPullRequest",
+        "onCommand:rhodecode.markHandled",
+        "onCommand:rhodecode.markUnhandled",
+        "onCommand:rhodecode.openChangeset",
+        "onCommand:rhodecode.openCurrentBranchPr",
+        "onCommand:rhodecode.openDebugOutput",
+        "onCommand:rhodecode.openPullRequest",
+        "onCommand:rhodecode.openRepoBrowser",
+        "onCommand:rhodecode.refresh",
+        "onCommand:rhodecode.replyComment",
+        "onCommand:rhodecode.selectRepoFromTree",
+        "onCommand:rhodecode.selectRepository",
+        "onCommand:rhodecode.showComments",
+        "onCommand:rhodecode.switchBranch",
+        "onCommand:rhodecode.switchTag",
+        "onCommand:rhodecode.toggleGroup",
+        "onView:rhodecode.pullRequests"
+    ],
+    "icon": "media/rhodecode-icon.png",
     "engines": {
         "vscode": "^1.80.0"
-    },
-    "icon": "media/rhodecode-icon.png",
-    "main": "./out/extension",
-    "name": "rhodecode-vscode-extension",
-    "publisher": "isaackehle",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/isaackehle/rhodecode-vscode-extension.git"
-    },
-    "scripts": {
-        "clean": "rm -rf out .vscode-test .rumdl_cache && find . -maxdepth 1 -name '*.vsix' -delete",
-        "compile": "tsc -p ./",
-        "format": "oxfmt --write \"src/**/*.ts\"",
-        "format:check": "oxfmt --check \"src/**/*.ts\"",
-        "format:md": "rumdl fmt .",
-        "lint": "oxlint src",
-        "lint:md": "rumdl check .",
-        "package": "vsce package --no-dependencies",
-        "release": "./scripts/release.sh",
-        "test": "bun run scripts/run-tests.cjs",
-        "test:integration": "node out/test/runTests.js",
-        "test:unit": "bun test",
-        "vscode:prepublish": "bun run compile",
-        "watch": "tsc -watch -p ./"
-    },
-    "version": "0.19.2"
+    }
 }
