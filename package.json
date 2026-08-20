@@ -24,6 +24,7 @@
         "release": "./scripts/release.sh",
         "test": "bun run scripts/run-tests.cjs",
         "test:integration": "node out/test/runTests.js",
+        "test:release": "bun run lint && bun run format:check && bun run lint:md && bun run test",
         "test:unit": "bun test",
         "vscode:prepublish": "bun run compile",
         "watch": "tsc -watch -p ./"
