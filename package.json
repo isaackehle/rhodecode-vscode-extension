@@ -1,7 +1,7 @@
 {
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
-    "version": "0.19.5",
+    "version": "0.19.6",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
     "categories": [
         "Other"
