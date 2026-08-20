@@ -97,6 +97,7 @@ export class GroupItem extends vscode.TreeItem {
         public readonly repoCount: number,
         public readonly isSelected: boolean,
         public readonly displayName: string = group.group_name,
+        public readonly hidden: boolean = false,
     ) {
         super(displayName, vscode.TreeItemCollapsibleState.Expanded);
         this.id = `group-${group.group_id}`;
@@ -104,7 +105,7 @@ export class GroupItem extends vscode.TreeItem {
         this.description = isSelected ? '🎯' : `${repoCount} repo${repoCount !== 1 ? 's' : ''}`;
         this.tooltip = `Group: ${group.group_name}\n${group.group_description || ''}\n${isSelected ? '🎯 Selected' : `Contains ${repoCount} repository${repoCount !== 1 ? 'ies' : ''}`}`;
         this.iconPath = isSelected
-            ? new vscode.ThemeIcon('symbol-event', new vscode.ThemeColor('tree.indentGuidesStroke'))
+            ? new vscode.ThemeIcon('target', new vscode.ThemeColor('tree.indentGuidesStroke'))
             : new vscode.ThemeIcon('symbol-folder');
         this.command = {
             command: 'rhodecode.toggleGroup',
@@ -120,6 +121,7 @@ class GroupNode {
         public readonly group: RepoGroup,
         public readonly displayName: string,
         public parent: GroupNode | null = null,
+        public hidden: boolean = false,
     ) {}
 
     children: GroupNode[] = [];
@@ -360,58 +362,33 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     /** Build hierarchical group structure from flat group list. */
     private buildGroupHierarchy(): GroupNode[] {
-        // Create nodes for all groups, tracking by both full name and leaf name
+        // Create nodes for all groups, using parent_group for hierarchy
         const groupMap = new Map<string, GroupNode>();
-        const leafNameMap = new Map<string, GroupNode>(); // leaf name -> node (for detecting duplicates)
+        const idMap = new Map<number, GroupNode>(); // group_id -> node (for parent_group lookup)
 
         for (const group of this.groups) {
-            const parts = group.group_name.split('/');
-            const displayName = parts[parts.length - 1];
-            const node = new GroupNode(group, displayName);
+            // Default hidden: true if no repos will be found
+            const groupPath = `${group.group_name}/`;
+            const hasRepos = this.repos.some((repo) => repo.repo_name.startsWith(groupPath));
+            const node = new GroupNode(group, group.group_name, null, !hasRepos);
             groupMap.set(group.group_name, node);
-            logDebug(`buildGroupHierarchy: Created node "${displayName}" for "${group.group_name}"`);
-
-            // Track by leaf name to detect duplicates (e.g., "X_Y" as both top-level and under "X")
-            const existingByLeaf = leafNameMap.get(displayName);
-            if (existingByLeaf) {
-                logDebug(
-                    `buildGroupHierarchy: Duplicate leaf name "${displayName}" detected: existing="${existingByLeaf.group.group_name}", new="${group.group_name}"`,
-                );
-                // If existing is a subgroup (contains /), replace with top-level node
-                if (existingByLeaf.group.group_name.includes('/')) {
-                    leafNameMap.set(displayName, node);
-                }
-            } else {
-                leafNameMap.set(displayName, node);
-            }
+            idMap.set(group.group_id, node);
+            logDebug(
+                `buildGroupHierarchy: Created node "${group.group_name}" (id=${group.group_id}, parent=${group.parent_group ?? 'null'}, hidden=${node.hidden}, hasRepos=${!node.hidden})`,
+            );
         }
 
-        // Link parent-child relationships and handle duplicate leaf names
-        for (const [groupName, node] of groupMap) {
-            const parts = groupName.split('/');
-            if (parts.length > 1) {
-                const parentName = parts.slice(0, -1).join('/');
-                const parentNode = groupMap.get(parentName);
+        // Link parent-child relationships using parent_group field
+        for (const [_groupName, node] of groupMap) {
+            if (node.group.parent_group) {
+                const parentNode = groupMap.get(node.group.parent_group);
                 if (parentNode) {
-                    // Check if a top-level node with the same leaf name exists
-                    const existingTopLevel = leafNameMap.get(node.displayName);
-                    if (existingTopLevel && existingTopLevel !== node && !existingTopLevel.parent) {
-                        // Move the top-level node under the parent (replaces the subgroup)
-                        logDebug(
-                            `buildGroupHierarchy: Moving duplicate leaf "${node.displayName}" from top-level to under parent "${parentNode.displayName}"`,
-                        );
-                        // Link the top-level duplicate to the parent
-                        existingTopLevel.parent = parentNode;
-                        parentNode.children.push(existingTopLevel);
-                        // Move any children of the subgroup to the moved top-level node
-                        existingTopLevel.children.push(...node.children);
-                        // Mark subgroup as having itself as parent (so it's not a root)
-                        node.parent = node;
-                        continue;
-                    }
-
                     parentNode.children.push(node);
                     node.parent = parentNode;
+                    parentNode.hidden = false; // Parent now has children, show it
+                    logDebug(
+                        `buildGroupHierarchy: Linked "${node.group.group_name}" -> "${parentNode.group.group_name}" (parent.hidden = false)`,
+                    );
                 }
             }
         }
@@ -429,17 +406,19 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
                 });
                 node.repos.push(repoWithFlattenedName);
             }
+            // If we found repos, unhide this node (and mark parent as visible)
+            if (node.repos.length > 0) {
+                node.hidden = false;
+                if (node.parent) {
+                    node.parent.hidden = false;
+                }
+            }
         }
 
-        // Return root nodes (groups with no parent or parent doesn't exist)
-        // Exclude nodes that are their own parent (subgroups that were replaced by top-level duplicates)
+        // Return root nodes (groups with no parent)
         const rootNodes: GroupNode[] = [];
         for (const node of groupMap.values()) {
-            if (node.parent === node) {
-                // Skip self-referencing nodes (subgroups replaced by top-level duplicates)
-                continue;
-            }
-            if (!node.parent || !groupMap.has(node.parent.group.group_name)) {
+            if (!node.parent) {
                 rootNodes.push(node);
             }
         }
@@ -451,12 +430,17 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
     private renderGroupNode(node: GroupNode): vscode.TreeItem[] {
         const items: vscode.TreeItem[] = [];
 
+        // Skip hidden nodes
+        if (node.hidden) {
+            return [];
+        }
+
         // Count repos for this group level only (not including children)
         const totalRepos = node.repos.length;
         const isSelected = this.selectedGroups.has(String(node.group.group_id));
 
         // Add group item - always use leaf displayName
-        const groupItem = new GroupItem(node.group, totalRepos, isSelected, node.displayName);
+        const groupItem = new GroupItem(node.group, totalRepos, isSelected, node.displayName, node.hidden);
         items.push(groupItem);
 
         // Add repos directly under this group (only this level, not children)

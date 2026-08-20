@@ -64,6 +64,8 @@ export interface RepoGroup {
     group_description: string | null;
     owner: string | null;
     parent_group: string | null;
+    permissions?: string[]; // e.g., ['read', 'write', 'admin']
+    repositories?: RepoInfo[]; // Direct children repositories (raw API response)
 }
 
 /** A repository the user can access (get_repos). */
