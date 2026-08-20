@@ -360,23 +360,56 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     /** Build hierarchical group structure from flat group list. */
     private buildGroupHierarchy(): GroupNode[] {
-        // Create nodes for all groups
+        // Create nodes for all groups, tracking by both full name and leaf name
         const groupMap = new Map<string, GroupNode>();
+        const leafNameMap = new Map<string, GroupNode>(); // leaf name -> node (for detecting duplicates)
+
         for (const group of this.groups) {
             const parts = group.group_name.split('/');
             const displayName = parts[parts.length - 1];
             const node = new GroupNode(group, displayName);
             groupMap.set(group.group_name, node);
             logDebug(`buildGroupHierarchy: Created node "${displayName}" for "${group.group_name}"`);
+
+            // Track by leaf name to detect duplicates (e.g., "X_Y" as both top-level and under "X")
+            const existingByLeaf = leafNameMap.get(displayName);
+            if (existingByLeaf) {
+                logDebug(
+                    `buildGroupHierarchy: Duplicate leaf name "${displayName}" detected: existing="${existingByLeaf.group.group_name}", new="${group.group_name}"`,
+                );
+                // If existing is a subgroup (contains /), replace with top-level node
+                if (existingByLeaf.group.group_name.includes('/')) {
+                    leafNameMap.set(displayName, node);
+                }
+            } else {
+                leafNameMap.set(displayName, node);
+            }
         }
 
-        // Link parent-child relationships
+        // Link parent-child relationships and handle duplicate leaf names
         for (const [groupName, node] of groupMap) {
             const parts = groupName.split('/');
             if (parts.length > 1) {
                 const parentName = parts.slice(0, -1).join('/');
                 const parentNode = groupMap.get(parentName);
                 if (parentNode) {
+                    // Check if a top-level node with the same leaf name exists
+                    const existingTopLevel = leafNameMap.get(node.displayName);
+                    if (existingTopLevel && existingTopLevel !== node && !existingTopLevel.parent) {
+                        // Move the top-level node under the parent (replaces the subgroup)
+                        logDebug(
+                            `buildGroupHierarchy: Moving duplicate leaf "${node.displayName}" from top-level to under parent "${parentNode.displayName}"`,
+                        );
+                        // Link the top-level duplicate to the parent
+                        existingTopLevel.parent = parentNode;
+                        parentNode.children.push(existingTopLevel);
+                        // Move any children of the subgroup to the moved top-level node
+                        existingTopLevel.children.push(...node.children);
+                        // Mark subgroup as having itself as parent (so it's not a root)
+                        node.parent = node;
+                        continue;
+                    }
+
                     parentNode.children.push(node);
                     node.parent = parentNode;
                 }
@@ -399,8 +432,13 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         }
 
         // Return root nodes (groups with no parent or parent doesn't exist)
+        // Exclude nodes that are their own parent (subgroups that were replaced by top-level duplicates)
         const rootNodes: GroupNode[] = [];
         for (const node of groupMap.values()) {
+            if (node.parent === node) {
+                // Skip self-referencing nodes (subgroups replaced by top-level duplicates)
+                continue;
+            }
             if (!node.parent || !groupMap.has(node.parent.group.group_name)) {
                 rootNodes.push(node);
             }
