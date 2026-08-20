@@ -1,7 +1,7 @@
 {
     "name": "rhodecode-vscode-extension",
     "displayName": "RhodeCode",
-    "version": "0.19.7",
+    "version": "0.20.0",
     "description": "Connect to RhodeCode: pick server, browse repositories, view branches, work with pull requests and comments.",
     "categories": [
         "Other"
@@ -46,6 +46,12 @@
     },
     "contributes": {
         "commands": [
+            {
+                "category": "RhodeCode",
+                "command": "rhodecode.prAction",
+                "icon": {"light": "media/rhodecode-plus.svg", "dark": "media/rhodecode-plus.svg"},
+                "title": "PR Action"
+            },
             {
                 "category": "RhodeCode",
                 "command": "rhodecode.refresh",
@@ -259,13 +265,18 @@
             ],
             "view/title": [
                 {
-                    "command": "rhodecode.refresh",
+                    "command": "rhodecode.prAction",
                     "group": "navigation",
                     "when": "view == rhodecode.pullRequests"
                 },
                 {
-                    "command": "rhodecode.openRepoBrowser",
+                    "command": "rhodecode.refresh",
                     "group": "navigation@2",
+                    "when": "view == rhodecode.pullRequests"
+                },
+                {
+                    "command": "rhodecode.openRepoBrowser",
+                    "group": "navigation@3",
                     "when": "view == rhodecode.pullRequests"
                 }
             ]
@@ -310,6 +321,7 @@
         "onCommand:rhodecode.openDebugOutput",
         "onCommand:rhodecode.openPullRequest",
         "onCommand:rhodecode.openRepoBrowser",
+        "onCommand:rhodecode.prAction",
         "onCommand:rhodecode.refresh",
         "onCommand:rhodecode.showPullRequests",
         "onCommand:rhodecode.replyComment",

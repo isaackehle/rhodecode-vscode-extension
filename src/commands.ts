@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import { RhodeCodeClient, reportError } from './rhodecode_request';
 import { RhodeCodePullRequest } from './model/rhodecode';
-import { PullRequestItem, PullRequestTreeProvider, GroupItem, RepoItem } from './pull_request_tree_provider';
+import {
+    PullRequestItem,
+    PullRequestTreeProvider,
+    GroupItem,
+    RepoItem,
+    PRActionItem,
+} from './pull_request_tree_provider';
 import { CommentViewProvider } from './comment_view_provider';
 import { setupConnection, browseRepositories } from './server_setup';
 import { setApiKey, setServerUrl, isApiKeyFromEnvEnabled } from './configuration';
@@ -19,6 +25,84 @@ export function registerCommands(
     refreshAll: () => Promise<void>,
 ): void {
     context.subscriptions.push(
+        vscode.commands.registerCommand('rhodecode.prAction', async (item?: PRActionItem) => {
+            logClick('Button clicked: rhodecode.prAction');
+            const client = getClient();
+            if (!client) {
+                logWarn('No client available for PR action');
+                return;
+            }
+
+            const action = item?.action;
+            const branchName = item?.branchName;
+
+            if (!action || !branchName) {
+                logWarn('No action or branch name provided for PR action');
+                return;
+            }
+
+            try {
+                const folder = vscode.workspace.workspaceFolders?.[0];
+                if (!folder) {
+                    logWarn('No workspace folder found for PR action');
+                    return;
+                }
+
+                const currentBranch = await getCurrentBranch(folder.uri.fsPath);
+                if (!currentBranch) {
+                    logWarn('No current branch detected for PR action');
+                    return;
+                }
+
+                if (action === 'open') {
+                    // Check if there's a PR for this branch
+                    const prs = await client.getPullRequests();
+                    const pr = prs.find((p) => p.source.reference.name === currentBranch);
+
+                    if (!pr) {
+                        logWarn('No pull request found for current branch');
+                        vscode.window.showInformationMessage('No pull request found for current branch.');
+                        return;
+                    }
+
+                    // Show confirmation dialog
+                    const confirm = await vscode.window.showWarningMessage(
+                        `Open pull request #${pr.pull_request_id} in browser?`,
+                        { modal: true },
+                        'Open',
+                        'Cancel',
+                    );
+
+                    if (confirm === 'Open') {
+                        logClick(`Opening PR #${pr.pull_request_id} in browser`);
+                        await vscode.env.openExternal(vscode.Uri.parse(client.pullRequestUrl(pr.pull_request_id)));
+                        logClick(`PR #${pr.pull_request_id} opened in browser`);
+                    } else {
+                        logWarn('PR open cancelled by user');
+                    }
+                } else if (action === 'create') {
+                    // Show confirmation dialog
+                    const confirm = await vscode.window.showWarningMessage(
+                        `Create a new pull request for branch "${currentBranch}"?`,
+                        { modal: true },
+                        'Create',
+                        'Cancel',
+                    );
+
+                    if (confirm === 'Create') {
+                        logClick(`Creating PR for branch: ${currentBranch}`);
+                        await vscode.commands.executeCommand('rhodecode.createPullRequest', currentBranch);
+                    } else {
+                        logWarn('PR creation cancelled by user');
+                    }
+                }
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                logError(`PR action failed: ${message}`);
+                reportError('pr action', err);
+            }
+        }),
+
         vscode.commands.registerCommand('rhodecode.connect', async (prefillServer?: string) => {
             logClick('Button clicked: rhodecode.connect');
             try {

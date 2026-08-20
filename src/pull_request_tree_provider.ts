@@ -60,22 +60,6 @@ export class RefItem extends vscode.TreeItem {
         this.iconPath = isCurrent
             ? new vscode.ThemeIcon('target')
             : new vscode.ThemeIcon(kind === 'tag' ? 'tag' : 'git-branch');
-        // Set command based on kind
-        if (kind === 'branch') {
-            // Keep switch branch command, add PR creation as a secondary action in tooltip
-            this.tooltip += '\n$(plus) Click to create PR';
-            this.command = {
-                command: 'rhodecode.switchBranch',
-                title: 'Switch to Branch',
-                arguments: [this],
-            };
-        } else {
-            this.command = {
-                command: 'rhodecode.switchTag',
-                title: 'Switch to Tag',
-                arguments: [this],
-            };
-        }
     }
 }
 
@@ -107,11 +91,26 @@ export class GroupItem extends vscode.TreeItem {
         this.iconPath = isSelected
             ? new vscode.ThemeIcon('target', new vscode.ThemeColor('tree.indentGuidesStroke'))
             : new vscode.ThemeIcon('symbol-folder');
-        this.command = {
-            command: 'rhodecode.toggleGroup',
-            title: 'Toggle Group',
-            arguments: [this],
-        };
+    }
+}
+
+/** PR action button shown in the view title. */
+export class PRActionItem extends vscode.TreeItem {
+    constructor(
+        public readonly action: 'open' | 'create',
+        public readonly branchName: string,
+    ) {
+        const icon = action === 'open' ? 'globe' : 'plus';
+        const label = action === 'open' ? 'Open PR in Browser' : 'Create PR';
+        super(label, vscode.TreeItemCollapsibleState.None);
+        this.id = `pr-action-${action}`;
+        this.contextValue = 'pr-action';
+        this.description = action === 'open' ? `for "${branchName}"` : `for "${branchName}"`;
+        this.iconPath = new vscode.ThemeIcon(icon);
+        this.tooltip =
+            action === 'open'
+                ? `Open pull request for branch "${branchName}" in browser`
+                : `Create a new pull request for branch "${branchName}"`;
     }
 }
 
@@ -137,11 +136,6 @@ export class RepoItem extends vscode.TreeItem {
         this.description = repo.repo_type;
         this.tooltip = `Repository: ${repo.repo_name}\nType: ${repo.repo_type}\nClone URI: ${repo.clone_uri || 'N/A'}`;
         this.iconPath = new vscode.ThemeIcon('repo');
-        this.command = {
-            command: 'rhodecode.selectRepoFromTree',
-            title: 'Select Repository',
-            arguments: [this],
-        };
     }
 }
 
@@ -281,6 +275,11 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
             return this.getReposForGroup(element.group);
         }
 
+        if (element instanceof PRActionItem) {
+            // PR action items don't have children
+            return [];
+        }
+
         if (element instanceof SectionItem || element instanceof BranchesSectionItem) {
             switch (element.sectionId) {
                 case 'pullrequests':
@@ -322,6 +321,15 @@ export class PullRequestTreeProvider implements vscode.TreeDataProvider<vscode.T
         const items: vscode.TreeItem[] = [];
 
         logDebug('buildTree(): Starting to build tree');
+
+        // Add PR action button at the top for the current branch
+        if (this.currentBranch) {
+            const prForBranch = this.getPRForBranch(this.currentBranch);
+            const action = prForBranch ? 'open' : 'create';
+            const prActionItem = new PRActionItem(action, this.currentBranch);
+            items.push(prActionItem);
+            logDebug(`buildTree(): Added PR action button (${action}) for branch "${this.currentBranch}"`);
+        }
 
         // Add PRs, branches, tags, bookmarks as section headers only
         // Their children are added when the section is expanded
