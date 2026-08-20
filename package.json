@@ -53,6 +53,12 @@
             },
             {
                 "category": "RhodeCode",
+                "command": "rhodecode.showPullRequests",
+                "icon": "$(git-pull-request)",
+                "title": "Show Pull Requests"
+            },
+            {
+                "category": "RhodeCode",
                 "command": "rhodecode.showComments",
                 "icon": "$(comment)",
                 "title": "Show Comments"
@@ -304,6 +310,7 @@
         "onCommand:rhodecode.openPullRequest",
         "onCommand:rhodecode.openRepoBrowser",
         "onCommand:rhodecode.refresh",
+        "onCommand:rhodecode.showPullRequests",
         "onCommand:rhodecode.replyComment",
         "onCommand:rhodecode.selectRepoFromTree",
         "onCommand:rhodecode.selectRepository",
